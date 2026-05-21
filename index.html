@@ -1,80 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bag Boutique | Stylish Bags for Every Occasion</title>
-  <style>
-    
-  </style>
-  <link rel="stylesheet" href="styles.css">
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Chromebook Checkout</title>
+	<link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="page">
-    <header>
-      <div class="brand">Bag Boutique</div>
-      <nav>
-        <ul class="nav-list">
-          <li><a href="#collections">Collections</a></li>
-          <li><a href="#best-sellers">Best Sellers</a></li>
-          <li><a href="#why-us">Why Us</a></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
-      </nav>
-    </header>
+	<div class="page-shell">
+		<header class="hero-panel">
+			<div>
+				<p class="eyebrow">School Device Manager</p>
+				<h1>Chromebook Checkout</h1>
+				<p class="hero-copy">Fast check-in and checkout for Chromebook devices with a clean, modern interface.</p>
+			</div>
+			<div class="hero-card">
+				<p>Ready to manage devices? Choose an action below to begin.</p>
+			</div>
+		</header>
 
-    <section class="hero">
-      <div class="hero-copy">
-        <div class="eyebrow">Every day essentials</div>
-        <h1 class="hero-title">Discover the perfect bag for your next journey.</h1>
-        <p class="hero-text">Shop curated totes, backpacks, crossbody bags, and travel companions crafted with premium leather, sustainable fabrics, and modern details.</p>
-        <div class="hero-actions">
-          <button class="button button-primary">Shop New Arrivals</button>
-          <button class="button button-secondary">View Best Sellers</button>
-        </div>
-        <div class="highlights">
-          <span class="pill">Free shipping on orders over $75</span>
-          <span class="pill">30-day returns � Lifetime support</span>
-        </div>
-      </div>
+		<section class="action-grid">
+			<button class="action-card checkout-card" id="checkoutButton">Checkout</button>
+			<button class="action-card checkin-card" id="checkinButton">Checkin</button>
+		</section>
 
-      <div class="hero-visual">
-        <div class="hero-card">
-          <img src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=900&q=80" alt="Fashionable bag on display" />
-          <div class="hero-card-body">
-            <h2 class="hero-card-title">The Urban Carryall</h2>
-            <p class="hero-card-copy">A polished tote with room for laptop, wallet, and weekday essentials.</p>
-            <div class="pill">Limited Edition</div>
-          </div>
-        </div>
-      </div>
-    </section>
+		<section class="log-panel">
+			<h2>Activity Log</h2>
+			<ul id="activityLog" class="activity-log">
+				<li class="log-empty">No actions yet. Use checkout or checkin to start logging.</li>
+			</ul>
+		</section>
+	</div>
 
-    <section class="featured" id="best-sellers">
-      <article class="featured-card">
-        <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80" alt="Minimal leather backpack" />
-        <h3>Minimalist Backpack</h3>
-        <p>Refined design, padded straps, and an interior organizer for daily commute ease.</p>
-        <div class="price">$120</div>
-      </article>
-      <article class="featured-card">
-        <img src="https://images.unsplash.com/photo-1542831371-d531d36971e6?auto=format&fit=crop&w=600&q=80" alt="Elegant shoulder bag" />
-        <h3>Everyday Shoulder Bag</h3>
-        <p>Soft silhouette, secure magnetic closure, and a versatile strap for all-day style.</p>
-        <div class="price">$94</div>
-      </article>
-      <article class="featured-card">
-        <img src="https://images.unsplash.com/photo-1495121605193-b116b5b9c5d9?auto=format&fit=crop&w=600&q=80" alt="Travel duffel bag" />
-        <h3>Weekend Duffel</h3>
-        <p>Durable travel companion with water-resistant fabric and thoughtful packing pockets.</p>
-        <div class="price">$148</div>
-      </article>
-    </section>
+	<div class="modal" id="checkoutModal" aria-hidden="true">
+		<div class="modal-content">
+			<button class="modal-close" id="closeCheckout">×</button>
+			<h3>Checkout Chromebook</h3>
+			<form id="checkoutForm">
+				<label for="checkoutDevice">Chromebook Number</label>
+				<input type="text" id="checkoutDevice" name="device" required placeholder="e.g. CB-102" />
+				<label for="checkoutStudent">Student ID</label>
+				<input type="text" id="checkoutStudent" name="student" required placeholder="e.g. S12345" />
+				<button type="submit" class="primary-btn">Confirm Checkout</button>
+			</form>
+		</div>
+	</div>
 
-    <footer id="contact">
-      <div>Bag Boutique � Crafted with care for your everyday carry</div>
-      <div>Questions? Email hello@bagboutique.com</div>
-    </footer>
-  </div>
+	<div class="modal" id="checkinModal" aria-hidden="true">
+		<div class="modal-content">
+			<button class="modal-close" id="closeCheckin">×</button>
+			<h3>Checkin Chromebook</h3>
+			<form id="checkinForm">
+				<label for="checkinStudent">Student ID</label>
+				<input type="text" id="checkinStudent" name="student" required placeholder="e.g. S12345" />
+				<button type="submit" class="primary-btn">Confirm Checkin</button>
+			</form>
+		</div>
+	</div>
+
+	<script>
+		const checkoutButton = document.getElementById('checkoutButton');
+		const checkinButton = document.getElementById('checkinButton');
+		const checkoutModal = document.getElementById('checkoutModal');
+		const checkinModal = document.getElementById('checkinModal');
+		const closeCheckout = document.getElementById('closeCheckout');
+		const closeCheckin = document.getElementById('closeCheckin');
+		const checkoutForm = document.getElementById('checkoutForm');
+		const checkinForm = document.getElementById('checkinForm');
+		const activityLog = document.getElementById('activityLog');
+		const state = {
+			checkouts: {}
+		};
+
+		function openModal(modal) {
+			modal.classList.add('open');
+			modal.setAttribute('aria-hidden', 'false');
+		}
+
+		function closeModal(modal) {
+			modal.classList.remove('open');
+			modal.setAttribute('aria-hidden', 'true');
+		}
+
+		function addLog(message) {
+			const emptyNode = document.querySelector('.log-empty');
+			if (emptyNode) emptyNode.remove();
+			const item = document.createElement('li');
+			item.textContent = `${new Date().toLocaleTimeString()} — ${message}`;
+			activityLog.prepend(item);
+		}
+
+		checkoutButton.addEventListener('click', () => openModal(checkoutModal));
+		checkinButton.addEventListener('click', () => openModal(checkinModal));
+		closeCheckout.addEventListener('click', () => closeModal(checkoutModal));
+		closeCheckin.addEventListener('click', () => closeModal(checkinModal));
+
+		checkoutForm.addEventListener('submit', event => {
+			event.preventDefault();
+			const device = document.getElementById('checkoutDevice').value.trim();
+			const student = document.getElementById('checkoutStudent').value.trim();
+			if (!device || !student) return;
+			state.checkouts[student] = device;
+			addLog(`Checked out Chromebook ${device} to student ${student}`);
+			checkoutForm.reset();
+			closeModal(checkoutModal);
+		});
+
+		checkinForm.addEventListener('submit', event => {
+			event.preventDefault();
+			const student = document.getElementById('checkinStudent').value.trim();
+			if (!student) return;
+			const device = state.checkouts[student];
+			if (device) {
+				delete state.checkouts[student];
+				addLog(`Checked in Chromebook ${device} from student ${student}`);
+			} else {
+				addLog(`No Chromebook found for student ${student}`);
+			}
+			checkinForm.reset();
+			closeModal(checkinModal);
+		});
+	</script>
 </body>
 </html>
