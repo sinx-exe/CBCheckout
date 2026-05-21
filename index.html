@@ -80,12 +80,14 @@
 		const TOTAL_DEVICES = 32;
 		const STORAGE_KEY = 'cbcheckouts_v1';
 		const state = {
-			checkouts: {}
+			checkouts: {},
+			activity: []
 		};
 
 		function saveState() {
 			try {
-				localStorage.setItem(STORAGE_KEY, JSON.stringify(state.checkouts));
+				const payload = { checkouts: state.checkouts, activity: state.activity };
+				localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 			} catch (e) {
 				console.warn('Failed to save state', e);
 			}
@@ -97,7 +99,12 @@
 				if (raw) {
 					const parsed = JSON.parse(raw);
 					if (parsed && typeof parsed === 'object') {
-						state.checkouts = parsed;
+						if (parsed.checkouts && typeof parsed.checkouts === 'object') {
+							state.checkouts = parsed.checkouts;
+						}
+						if (Array.isArray(parsed.activity)) {
+							state.activity = parsed.activity;
+						}
 					}
 				}
 			} catch (e) {
@@ -123,11 +130,31 @@
 		}
 
 		function addLog(message) {
+			const text = `${new Date().toLocaleTimeString()} — ${message}`;
+			// store newest first
+			state.activity.unshift(text);
+			saveState();
 			const emptyNode = document.querySelector('.log-empty');
 			if (emptyNode) emptyNode.remove();
 			const item = document.createElement('li');
-			item.textContent = `${new Date().toLocaleTimeString()} — ${message}`;
+			item.textContent = text;
 			activityLog.prepend(item);
+		}
+
+		function renderActivity() {
+			activityLog.innerHTML = '';
+			if (!state.activity || state.activity.length === 0) {
+				const empty = document.createElement('li');
+				empty.className = 'log-empty';
+				empty.textContent = 'No actions yet. Use checkout or checkin to start logging.';
+				activityLog.appendChild(empty);
+				return;
+			}
+			for (const entry of state.activity) {
+				const item = document.createElement('li');
+				item.textContent = entry;
+				activityLog.appendChild(item);
+			}
 		}
 
 		checkoutButton.addEventListener('click', () => openModal(checkoutModal));
@@ -140,12 +167,11 @@
 			const device = document.getElementById('checkoutDevice').value.trim();
 			const student = document.getElementById('checkoutStudent').value.trim();
 			if (!device || !student) return;
-			state.checkouts[student] = device;
-			addLog(`Checked out Chromebook ${device} to student ${student}`);
+				state.checkouts[student] = device;
+				addLog(`Checked out Chromebook ${device} to student ${student}`);
 			checkoutForm.reset();
 			closeModal(checkoutModal);
-			saveState();
-			updateCounts();
+				updateCounts();
 		});
 
 		checkinForm.addEventListener('submit', event => {
@@ -161,13 +187,13 @@
 			}
 			checkinForm.reset();
 			closeModal(checkinModal);
-			saveState();
 			updateCounts();
 		});
 
 		// load persisted state and initialize counts on load
 		loadState();
 		updateCounts();
+		renderActivity();
 	</script>
 </body>
 </html>
