@@ -15,7 +15,16 @@
 				<p class="hero-copy">Fast check-in and checkout for Chromebook devices with a clean, modern interface.</p>
 			</div>
 			<div class="hero-card">
-				<p>Ready to manage devices? Choose an action below to begin.</p>
+				<div class="stats-grid">
+					<div class="stat-card available">
+						<div class="stat-number" id="availableCount">32</div>
+						<div class="stat-label">Available</div>
+					</div>
+					<div class="stat-card checkedout">
+						<div class="stat-number" id="checkedOutCount">0</div>
+						<div class="stat-label">Checked Out</div>
+					</div>
+				</div>
 			</div>
 		</header>
 
@@ -38,9 +47,9 @@
 			<h3>Checkout Chromebook</h3>
 			<form id="checkoutForm">
 				<label for="checkoutDevice">Chromebook Number</label>
-				<input type="text" id="checkoutDevice" name="device" required placeholder="e.g. CB-102" />
+				<input type="text" id="checkoutDevice" name="device" required placeholder="xxx" />
 				<label for="checkoutStudent">Student ID</label>
-				<input type="text" id="checkoutStudent" name="student" required placeholder="e.g. S12345" />
+				<input type="text" id="checkoutStudent" name="student" required placeholder="xxx" />
 				<button type="submit" class="primary-btn">Confirm Checkout</button>
 			</form>
 		</div>
@@ -68,9 +77,17 @@
 		const checkoutForm = document.getElementById('checkoutForm');
 		const checkinForm = document.getElementById('checkinForm');
 		const activityLog = document.getElementById('activityLog');
+		const TOTAL_DEVICES = 32;
 		const state = {
 			checkouts: {}
 		};
+
+		function updateCounts() {
+			const checked = Object.keys(state.checkouts).length;
+			const available = Math.max(0, TOTAL_DEVICES - checked);
+			document.getElementById('checkedOutCount').textContent = checked;
+			document.getElementById('availableCount').textContent = available;
+		}
 
 		function openModal(modal) {
 			modal.classList.add('open');
@@ -104,6 +121,7 @@
 			addLog(`Checked out Chromebook ${device} to student ${student}`);
 			checkoutForm.reset();
 			closeModal(checkoutModal);
+			updateCounts();
 		});
 
 		checkinForm.addEventListener('submit', event => {
@@ -119,7 +137,11 @@
 			}
 			checkinForm.reset();
 			closeModal(checkinModal);
+			updateCounts();
 		});
+
+		// initialize counts on load
+		updateCounts();
 	</script>
 </body>
 </html>

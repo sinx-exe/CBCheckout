@@ -55,6 +55,44 @@ h1 {
 	color: #e2e8f0;
 }
 
+.stats-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.stat-card {
+	padding: 14px 18px;
+	border-radius: 14px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-width: 180px;
+}
+
+.stat-card .stat-number {
+	font-size: 2.2rem;
+	font-weight: 800;
+	color: #fff;
+}
+
+.stat-card .stat-label {
+	margin-top: 6px;
+	color: #cbd5e1;
+	font-size: 0.95rem;
+}
+
+.stat-card.available {
+	background: linear-gradient(90deg, rgba(16,185,129,0.16), rgba(4,120,87,0.12));
+	border: 1px solid rgba(16,185,129,0.18);
+}
+
+.stat-card.checkedout {
+	background: linear-gradient(90deg, rgba(245,158,11,0.12), rgba(153,27,27,0.06));
+	border: 1px solid rgba(245,158,11,0.14);
+}
+
 .action-grid {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(220px, 1fr));
