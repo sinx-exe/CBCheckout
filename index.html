@@ -121,7 +121,40 @@
 		const VALID_USER = 'username';
 		const VALID_PASS = 'password';
 		let currentUser = null;
-		const deviceMeta = {};
+		const deviceMeta = {
+  "1": { barcode: "CB01BAR", serial: "SN1001" },
+  "2": { barcode: "CB02BAR", serial: "SN1002" },
+  "3": { barcode: "CB03BAR", serial: "SN1003" },
+  "4": { barcode: "CB04BAR", serial: "SN1004" },
+  "5": { barcode: "CB05BAR", serial: "SN1005" },
+  "6": { barcode: "CB06BAR", serial: "SN1006" },
+  "7": { barcode: "CB07BAR", serial: "SN1007" },
+  "8": { barcode: "CB08BAR", serial: "SN1008" },
+  "9": { barcode: "CB09BAR", serial: "SN1009" },
+  "10": { barcode: "CB10BAR", serial: "SN1010" },
+  "11": { barcode: "CB11BAR", serial: "SN1011" },
+  "12": { barcode: "CB12BAR", serial: "SN1012" },
+  "13": { barcode: "CB13BAR", serial: "SN1013" },
+  "14": { barcode: "CB14BAR", serial: "SN1014" },
+  "15": { barcode: "CB15BAR", serial: "SN1015" },
+  "16": { barcode: "CB16BAR", serial: "SN1016" },
+  "17": { barcode: "CB17BAR", serial: "SN1017" },
+  "18": { barcode: "CB18BAR", serial: "SN1018" },
+  "19": { barcode: "CB19BAR", serial: "SN1019" },
+  "20": { barcode: "CB20BAR", serial: "SN1020" },
+  "21": { barcode: "CB21BAR", serial: "SN1021" },
+  "22": { barcode: "CB22BAR", serial: "SN1022" },
+  "23": { barcode: "CB23BAR", serial: "SN1023" },
+  "24": { barcode: "CB24BAR", serial: "SN1024" },
+  "25": { barcode: "CB25BAR", serial: "SN1025" },
+  "26": { barcode: "CB26BAR", serial: "SN1026" },
+  "27": { barcode: "CB27BAR", serial: "SN1027" },
+  "28": { barcode: "CB28BAR", serial: "SN1028" },
+  "29": { barcode: "CB29BAR", serial: "SN1029" },
+  "30": { barcode: "CB30BAR", serial: "SN1030" },
+  "31": { barcode: "CB31BAR", serial: "SN1031" },
+  "32": { barcode: "CB32BAR", serial: "SN1032" }
+};
 		for (let i = 1; i <= TOTAL_DEVICES; i++) {
 			const padded = String(i).padStart(2, '0');
 			deviceMeta[String(i)] = {
