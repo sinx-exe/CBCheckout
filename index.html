@@ -13,6 +13,10 @@
 				<p class="eyebrow">School Device Manager</p>
 				<h1>Chromebook Checkout</h1>
 			</div>
+			<div class="login-section">
+				<button class="secondary-btn" id="loginButton">Login</button>
+				<span class="login-label" id="loginStatus">Not signed in</span>
+			</div>
 		</header>
 
 		<section class="action-grid">
@@ -80,6 +84,20 @@
 		</div>
 	</div>
 
+	<div class="modal" id="loginModal" aria-hidden="true">
+		<div class="modal-content">
+			<button class="modal-close" id="closeLogin">×</button>
+			<h3>Sign In</h3>
+			<form id="loginForm">
+				<label for="loginUsername">Username</label>
+				<input type="text" id="loginUsername" required placeholder="username" />
+				<label for="loginPassword">Password</label>
+				<input type="password" id="loginPassword" required placeholder="password" />
+				<button type="submit" class="primary-btn">Sign In</button>
+			</form>
+		</div>
+	</div>
+
 	<script>
 		const checkoutButton = document.getElementById('checkoutButton');
 		const checkinButton = document.getElementById('checkinButton');
@@ -90,8 +108,18 @@
 		const checkoutForm = document.getElementById('checkoutForm');
 		const checkinForm = document.getElementById('checkinForm');
 		const activityLog = document.getElementById('activityLog');
+		const loginButton = document.getElementById('loginButton');
+		const loginModal = document.getElementById('loginModal');
+		const closeLogin = document.getElementById('closeLogin');
+		const loginForm = document.getElementById('loginForm');
+		const loginUsername = document.getElementById('loginUsername');
+		const loginPassword = document.getElementById('loginPassword');
+		const loginStatus = document.getElementById('loginStatus');
 		const TOTAL_DEVICES = 32;
 		const STORAGE_KEY = 'cbcheckouts_v1';
+		const VALID_USER = 'username';
+		const VALID_PASS = 'password';
+		let currentUser = null;
 		const deviceMeta = {};
 		for (let i = 1; i <= TOTAL_DEVICES; i++) {
 			const padded = String(i).padStart(2, '0');
@@ -114,10 +142,15 @@
 			}
 		}
 
+		function getStorageKey() {
+			return currentUser ? `${STORAGE_KEY}_${currentUser}` : STORAGE_KEY;
+		}
+
 		function saveState() {
+			if (!currentUser) return;
 			try {
 				const payload = { devices: state.devices, activity: state.activity };
-				localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+				localStorage.setItem(getStorageKey(), JSON.stringify(payload));
 			} catch (e) {
 				console.warn('Failed to save state', e);
 			}
@@ -125,8 +158,14 @@
 
 		function loadState() {
 			let hasSavedState = false;
+			if (!currentUser) {
+				state.devices = {};
+				state.activity = [];
+				ensureDevices();
+				return;
+			}
 			try {
-				const raw = localStorage.getItem(STORAGE_KEY);
+				const raw = localStorage.getItem(getStorageKey());
 				if (raw) {
 					hasSavedState = true;
 					const parsed = JSON.parse(raw);
@@ -180,6 +219,18 @@
 				btn.addEventListener('click', () => openDeviceModal(key));
 				deviceGrid.appendChild(btn);
 			}
+		}
+
+		function setControlsEnabled(enabled) {
+			checkoutButton.disabled = !enabled;
+			checkinButton.disabled = !enabled;
+			const gridButtons = document.querySelectorAll('.device-btn');
+			gridButtons.forEach(btn => btn.disabled = !enabled);
+		}
+
+		function renderLoginStatus() {
+			loginStatus.textContent = currentUser ? `Signed in as ${currentUser}` : 'Not signed in';
+			loginButton.textContent = currentUser ? 'Logout' : 'Login';
 		}
 
 		function openDeviceModal(deviceNum) {
@@ -283,6 +334,38 @@
 		closeCheckout.addEventListener('click', () => closeModal(checkoutModal));
 		closeCheckin.addEventListener('click', () => closeModal(checkinModal));
 		closeDevice.addEventListener('click', () => closeModal(deviceModal));
+		loginButton.addEventListener('click', () => {
+			if (currentUser) {
+				currentUser = null;
+				loadState();
+				renderGrid();
+				updateCounts();
+				renderActivity();
+				renderLoginStatus();
+				setControlsEnabled(false);
+			} else {
+				openModal(loginModal);
+			}
+		});
+		closeLogin.addEventListener('click', () => closeModal(loginModal));
+		loginForm.addEventListener('submit', event => {
+			event.preventDefault();
+			const username = loginUsername.value.trim();
+			const password = loginPassword.value.trim();
+			if (username === VALID_USER && password === VALID_PASS) {
+				currentUser = username;
+				loadState();
+				renderGrid();
+				updateCounts();
+				renderActivity();
+				renderLoginStatus();
+				setControlsEnabled(true);
+				closeModal(loginModal);
+				loginForm.reset();
+			} else {
+				alert('Invalid username or password.');
+			}
+		});
 
 		checkoutForm.addEventListener('submit', event => {
 			event.preventDefault();
@@ -338,6 +421,8 @@
 		renderGrid();
 		updateCounts();
 		renderActivity();
+		renderLoginStatus();
+		setControlsEnabled(false);
 	</script>
 </body>
 </html>
