@@ -232,6 +232,49 @@ h1 {
 	font-size: 1.9rem;
 }
 
+.device-info {
+	display: grid;
+	gap: 14px;
+	margin-bottom: 20px;
+}
+
+.editable-meta-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 12px 14px;
+	border-radius: 18px;
+	background: rgba(148, 163, 184, 0.08);
+	border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.editable-meta-row span {
+	flex: 1;
+}
+
+.meta-edit-group {
+	display: grid;
+	gap: 10px;
+	width: 100%;
+}
+
+.meta-edit-actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.meta-input {
+	width: 100%;
+	max-width: 260px;
+}
+
+.small-btn {
+	padding: 8px 12px;
+	font-size: 0.9rem;
+}
+
 label {
 	display: block;
 	margin-bottom: 10px;
