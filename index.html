@@ -117,6 +117,7 @@
 		const loginStatus = document.getElementById('loginStatus');
 		const TOTAL_DEVICES = 32;
 		const STORAGE_KEY = 'cbcheckouts_v1';
+		const LOGIN_USER_KEY = 'cbcheckouts_currentUser';
 		const VALID_USER = 'username';
 		const VALID_PASS = 'password';
 		let currentUser = null;
@@ -153,6 +154,23 @@
 				localStorage.setItem(getStorageKey(), JSON.stringify(payload));
 			} catch (e) {
 				console.warn('Failed to save state', e);
+			}
+		}
+
+		function saveLoggedInUser() {
+			if (currentUser) {
+				localStorage.setItem(LOGIN_USER_KEY, currentUser);
+			}
+		}
+
+		function clearLoggedInUser() {
+			localStorage.removeItem(LOGIN_USER_KEY);
+		}
+
+		function loadLoggedInUser() {
+			const user = localStorage.getItem(LOGIN_USER_KEY);
+			if (user === VALID_USER) {
+				currentUser = user;
 			}
 		}
 
@@ -337,6 +355,7 @@
 		loginButton.addEventListener('click', () => {
 			if (currentUser) {
 				currentUser = null;
+				clearLoggedInUser();
 				loadState();
 				renderGrid();
 				updateCounts();
@@ -354,6 +373,7 @@
 			const password = loginPassword.value.trim();
 			if (username === VALID_USER && password === VALID_PASS) {
 				currentUser = username;
+				saveLoggedInUser();
 				loadState();
 				renderGrid();
 				updateCounts();
@@ -416,13 +436,14 @@
 			renderActivity();
 		});
 
-		// load persisted state and initialize counts on load
+		// load logged-in account and its persisted state on load
+		loadLoggedInUser();
 		loadState();
 		renderGrid();
 		updateCounts();
 		renderActivity();
 		renderLoginStatus();
-		setControlsEnabled(false);
+		setControlsEnabled(!!currentUser);
 	</script>
 </body>
 </html>
