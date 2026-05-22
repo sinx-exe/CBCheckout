@@ -14,6 +14,7 @@
 				<h1>Chromebook Checkout</h1>
 			</div>
 			<div class="login-section">
+				<button class="secondary-btn" id="themeToggle">Light mode</button>
 				<button class="secondary-btn" id="loginButton">Login</button>
 				<span class="login-label" id="loginStatus">Not signed in</span>
 			</div>
@@ -108,6 +109,7 @@
 		const checkoutForm = document.getElementById('checkoutForm');
 		const checkinForm = document.getElementById('checkinForm');
 		const activityLog = document.getElementById('activityLog');
+		const themeToggleButton = document.getElementById('themeToggle');
 		const loginButton = document.getElementById('loginButton');
 		const loginModal = document.getElementById('loginModal');
 		const closeLogin = document.getElementById('closeLogin');
@@ -120,6 +122,7 @@
 		const LOGIN_USER_KEY = 'cbcheckouts_currentUser';
 		const VALID_USER = 'username';
 		const VALID_PASS = 'password';
+		const THEME_KEY = 'cbcheckouts_theme';
 		let currentUser = null;
 		const DEFAULT_DEVICE_META = {};
 		for (let i = 1; i <= TOTAL_DEVICES; i++) {
@@ -177,6 +180,10 @@
 			}
 		}
 
+		function saveTheme(theme) {
+			localStorage.setItem(THEME_KEY, theme);
+		}
+
 		function clearLoggedInUser() {
 			localStorage.removeItem(LOGIN_USER_KEY);
 		}
@@ -186,6 +193,28 @@
 			if (user === VALID_USER) {
 				currentUser = user;
 			}
+		}
+
+		function loadTheme() {
+			const storedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+			document.body.classList.toggle('light-mode', storedTheme === 'light');
+			document.body.classList.toggle('dark-mode', storedTheme !== 'light');
+			return storedTheme;
+		}
+
+		function renderThemeButton(theme) {
+			const themeButton = document.getElementById('themeToggle');
+			if (!themeButton) return;
+			themeButton.textContent = theme === 'light' ? 'Dark mode' : 'Light mode';
+		}
+
+		function toggleTheme() {
+			const isLight = document.body.classList.contains('light-mode');
+			const nextTheme = isLight ? 'dark' : 'light';
+			document.body.classList.toggle('light-mode', nextTheme === 'light');
+			document.body.classList.toggle('dark-mode', nextTheme !== 'light');
+			saveTheme(nextTheme);
+			renderThemeButton(nextTheme);
 		}
 
 		function loadState() {
@@ -428,6 +457,7 @@
 			}
 		});
 		closeLogin.addEventListener('click', () => closeModal(loginModal));
+		themeToggleButton.addEventListener('click', toggleTheme);
 		loginForm.addEventListener('submit', event => {
 			event.preventDefault();
 			const username = loginUsername.value.trim();
@@ -497,8 +527,10 @@
 			renderActivity();
 		});
 
-		// load logged-in account and its persisted state on load
+		// load logged-in account, theme, and persisted state on load
 		loadLoggedInUser();
+		const theme = loadTheme();
+		renderThemeButton(theme);
 		loadState();
 		renderGrid();
 		updateCounts();
