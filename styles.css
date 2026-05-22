@@ -257,24 +257,25 @@ h1 {
 	display: grid;
 	gap: 10px;
 	width: 100%;
+	justify-items: center;
 }
 
 .meta-edit-actions {
 	display: flex;
 	gap: 8px;
 	flex-wrap: wrap;
+	justify-content: center;
 }
 
 .meta-input {
-	width: 100%;
-	max-width: 260px;
+	width: min(260px, 100%);
 }
 
 .small-btn {
-	padding: 8px 12px;
-	font-size: 0.9rem;
+	padding: 6px 10px;
+	font-size: 0.85rem;
+	min-width: 72px;
 }
-
 label {
 	display: block;
 	margin-bottom: 10px;
