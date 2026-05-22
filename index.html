@@ -93,15 +93,28 @@
 		const TOTAL_DEVICES = 32;
 		const STORAGE_KEY = 'cbcheckouts_v1';
 		const state = {
-			devices: {},
+			devices: {}, // deviceNum -> { student: string|null, serial: string, barcode: string }
 			activity: []
 		};
+
+		function makeSerial(n) {
+			return `SN${String(n).padStart(4, '0')}`;
+		}
+
+		function makeBarcode(n) {
+			return `BC-${String(n).padStart(4, '0')}`;
+		}
 
 		function ensureDevices() {
 			for (let i = 1; i <= TOTAL_DEVICES; i++) {
 				const key = String(i);
-				if (!Object.prototype.hasOwnProperty.call(state.devices, key)) {
-					state.devices[key] = null;
+				if (!Object.prototype.hasOwnProperty.call(state.devices, key) || !state.devices[key]) {
+					state.devices[key] = { student: null, serial: makeSerial(i), barcode: makeBarcode(i) };
+				} else {
+					// ensure metadata exists
+					if (!('serial' in state.devices[key])) state.devices[key].serial = makeSerial(i);
+					if (!('barcode' in state.devices[key])) state.devices[key].barcode = makeBarcode(i);
+					if (!('student' in state.devices[key])) state.devices[key].student = null;
 				}
 			}
 		}
@@ -128,7 +141,8 @@
 							for (const [student, deviceStr] of Object.entries(parsed.checkouts)) {
 								const numMatch = String(deviceStr).match(/(\d+)/);
 								if (numMatch) {
-									state.devices[String(parseInt(numMatch[1], 10))] = student;
+									const num = String(parseInt(numMatch[1], 10));
+									state.devices[num] = { student: student, serial: makeSerial(num), barcode: makeBarcode(num) };
 								}
 							}
 						}
@@ -144,7 +158,7 @@
 		}
 
 		function updateCounts() {
-			const checked = Object.values(state.devices).filter(Boolean).length;
+			const checked = Object.values(state.devices).filter(d => d && d.student).length;
 			const available = Math.max(0, TOTAL_DEVICES - checked);
 			document.getElementById('checkedOutCount').textContent = checked;
 			document.getElementById('availableCount').textContent = available;
@@ -160,8 +174,9 @@
 			deviceGrid.innerHTML = '';
 			for (let i = 1; i <= TOTAL_DEVICES; i++) {
 				const key = String(i);
+				const meta = state.devices[key];
 				const btn = document.createElement('button');
-				btn.className = 'device-btn ' + (state.devices[key] ? 'checkedout' : 'available');
+				btn.className = 'device-btn ' + (meta && meta.student ? 'checkedout' : 'available');
 				btn.textContent = key;
 				btn.dataset.device = key;
 				btn.addEventListener('click', () => openDeviceModal(key));
@@ -171,17 +186,24 @@
 
 		function openDeviceModal(deviceNum) {
 			deviceModalTitle.textContent = `Device ${deviceNum}`;
-			const student = state.devices[String(deviceNum)];
+			const meta = state.devices[String(deviceNum)];
 			deviceModalBody.innerHTML = '';
-			if (student) {
+			// show barcode and serial
+			const metaList = document.createElement('div');
+			metaList.innerHTML = `
+				<p><strong>Barcode:</strong> ${meta.barcode}</p>
+				<p><strong>Serial:</strong> ${meta.serial}</p>
+			`;
+			deviceModalBody.appendChild(metaList);
+			if (meta.student) {
 				const p = document.createElement('p');
-				p.textContent = `Checked out to: ${student}`;
+				p.textContent = `Checked out to: ${meta.student}`;
 				const btn = document.createElement('button');
 				btn.className = 'primary-btn';
 				btn.textContent = 'Checkin';
 				btn.addEventListener('click', () => {
-					state.devices[String(deviceNum)] = null;
-					addLog(`Checked in Chromebook ${deviceNum} from student ${student}`);
+					state.devices[String(deviceNum)].student = null;
+					addLog(`Checked in Chromebook ${deviceNum} (S/N ${meta.serial}) from student ${meta.student}`);
 					saveState();
 					updateCounts();
 					renderGrid();
@@ -204,8 +226,8 @@
 					const input = form.querySelector('#deviceStudent');
 					const studentId = input.value.trim();
 					if (!studentId) return;
-					state.devices[String(deviceNum)] = studentId;
-					addLog(`Checked out Chromebook ${deviceNum} to student ${studentId}`);
+					state.devices[String(deviceNum)].student = studentId;
+					addLog(`Checked out Chromebook ${deviceNum} (S/N ${meta.serial}) to student ${studentId}`);
 					saveState();
 					updateCounts();
 					renderGrid();
@@ -272,8 +294,8 @@
 			if (!match) return;
 			const deviceNum = String(parseInt(match[1], 10));
 			if (parseInt(deviceNum, 10) < 1 || parseInt(deviceNum, 10) > TOTAL_DEVICES) return;
-			state.devices[deviceNum] = student;
-			addLog(`Checked out Chromebook ${deviceNum} to student ${student}`);
+			state.devices[deviceNum].student = student;
+			addLog(`Checked out Chromebook ${deviceNum} (S/N ${state.devices[deviceNum].serial}) to student ${student}`);
 			saveState();
 			checkoutForm.reset();
 			closeModal(checkoutModal);
@@ -284,20 +306,22 @@
 
 		checkinForm.addEventListener('submit', event => {
 			event.preventDefault();
-			const student = document.getElementById('checkinStudent').value.trim();
-			if (!student) return;
+			const serialIn = document.getElementById('checkinStudent').value.trim();
+			if (!serialIn) return;
+			// find device by serial
 			let found = null;
-			for (const [num, sid] of Object.entries(state.devices)) {
-				if (sid === student) {
+			for (const [num, meta] of Object.entries(state.devices)) {
+				if (meta && meta.serial === serialIn) {
 					found = num;
 					break;
 				}
 			}
 			if (found) {
-				state.devices[found] = null;
-				addLog(`Checked in Chromebook ${found} from student ${student}`);
+				const student = state.devices[found].student;
+				state.devices[found].student = null;
+				addLog(`Checked in Chromebook ${found} (S/N ${serialIn}) from student ${student ?? 'unknown'}`);
 			} else {
-				addLog(`No Chromebook found for student ${student}`);
+				addLog(`No Chromebook found with serial ${serialIn}`);
 			}
 			saveState();
 			checkinForm.reset();
