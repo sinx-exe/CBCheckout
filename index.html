@@ -10,16 +10,10 @@
 	<div class="page-shell">
 		<header class="hero-panel">
 			<div>
+				<p class="eyebrow">School Device Manager</p>
 				<h1>Chromebook Checkout</h1>
+				<p class="hero-copy">Fast check-in and checkout for Chromebook devices with a clean, modern interface.</p>
 			</div>
-		</header>
-
-		<section class="action-grid">
-			<button class="action-card checkin-card" id="checkinButton">Checkin</button>
-			<button class="action-card checkout-card" id="checkoutButton">Checkout</button>
-		</section>
-
-		<section class="availability">
 			<div class="hero-card">
 				<div class="stats-grid">
 					<div class="stat-card available">
@@ -32,11 +26,11 @@
 					</div>
 				</div>
 			</div>
-		</section>
+		</header>
 
-		<section class="device-grid-section">
-			<h3>Devices</h3>
-			<div id="deviceGrid" class="device-grid" aria-label="Device grid"></div>
+		<section class="action-grid">
+			<button class="action-card checkin-card" id="checkinButton">Checkin</button>
+			<button class="action-card checkout-card" id="checkoutButton">Checkout</button>
 		</section>
 
 		<section class="log-panel">
@@ -86,13 +80,13 @@
 		const TOTAL_DEVICES = 32;
 		const STORAGE_KEY = 'cbcheckouts_v1';
 		const state = {
-			devices: {},
+			checkouts: {},
 			activity: []
 		};
 
 		function saveState() {
 			try {
-				const payload = { devices: state.devices, activity: state.activity };
+				const payload = { checkouts: state.checkouts, activity: state.activity };
 				localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
 			} catch (e) {
 				console.warn('Failed to save state', e);
@@ -105,8 +99,8 @@
 				if (raw) {
 					const parsed = JSON.parse(raw);
 					if (parsed && typeof parsed === 'object') {
-						if (parsed.devices && typeof parsed.devices === 'object') {
-							state.devices = parsed.devices;
+						if (parsed.checkouts && typeof parsed.checkouts === 'object') {
+							state.checkouts = parsed.checkouts;
 						}
 						if (Array.isArray(parsed.activity)) {
 							state.activity = parsed.activity;
@@ -118,16 +112,8 @@
 			}
 		}
 
-		// ensure devices object has keys 1..TOTAL_DEVICES
-		function ensureDevices() {
-			for (let i = 1; i <= TOTAL_DEVICES; i++) {
-				const k = String(i);
-				if (!(k in state.devices)) state.devices[k] = null;
-			}
-		}
-
 		function updateCounts() {
-			const checked = Object.values(state.devices).filter(v => v).length;
+			const checked = Object.keys(state.checkouts).length;
 			const available = Math.max(0, TOTAL_DEVICES - checked);
 			document.getElementById('checkedOutCount').textContent = checked;
 			document.getElementById('availableCount').textContent = available;
@@ -171,90 +157,6 @@
 			}
 		}
 
-		function renderGrid() {
-			const grid = document.getElementById('deviceGrid');
-			grid.innerHTML = '';
-			for (let i = 1; i <= TOTAL_DEVICES; i++) {
-				const btn = document.createElement('button');
-				btn.className = 'device-btn';
-				btn.dataset.number = String(i);
-				btn.type = 'button';
-				btn.textContent = String(i);
-				const assigned = state.devices[String(i)];
-				if (assigned) {
-					btn.classList.add('checked');
-				} else {
-					btn.classList.add('available');
-				}
-				btn.addEventListener('click', () => openDeviceMenu(i));
-				grid.appendChild(btn);
-			}
-		}
-
-		// device modal behaviors
-		const deviceModal = document.createElement('div');
-		deviceModal.className = 'modal';
-		deviceModal.id = 'deviceModal';
-		deviceModal.setAttribute('aria-hidden','true');
-		deviceModal.innerHTML = `
-			<div class="modal-content">
-				<button class="modal-close" id="closeDevice">×</button>
-				<h3 id="deviceTitle">Device</h3>
-				<div id="deviceDetails"></div>
-				<div id="deviceActions"></div>
-			</div>
-		`;
-		document.body.appendChild(deviceModal);
-
-		function openDeviceMenu(number) {
-			const modal = document.getElementById('deviceModal');
-			modal.classList.add('open');
-			modal.setAttribute('aria-hidden','false');
-			document.getElementById('deviceTitle').textContent = `Chromebook ${number}`;
-			const details = document.getElementById('deviceDetails');
-			const actions = document.getElementById('deviceActions');
-			const assigned = state.devices[String(number)];
-			details.innerHTML = assigned ? `<p>Checked out to <strong>${assigned}</strong></p>` : `<p>Available</p>`;
-			actions.innerHTML = '';
-			if (assigned) {
-				const btn = document.createElement('button');
-				btn.className = 'primary-btn';
-				btn.textContent = 'Checkin';
-				btn.addEventListener('click', () => {
-					delete state.devices[String(number)];
-					addLog(`Checked in Chromebook ${number} from student ${assigned}`);
-					saveState();
-					updateCounts();
-					renderGrid();
-					document.getElementById('deviceModal').classList.remove('open');
-				});
-				actions.appendChild(btn);
-			} else {
-				const form = document.createElement('form');
-				form.innerHTML = `
-					<label for="quickStudent">Student ID</label>
-					<input id="quickStudent" name="student" required placeholder="e.g. S12345" />
-					<button type="submit" class="primary-btn">Checkout</button>
-				`;
-				form.addEventListener('submit', e => {
-					e.preventDefault();
-					const student = form.querySelector('#quickStudent').value.trim();
-					if (!student) return;
-					state.devices[String(number)] = student;
-					addLog(`Checked out Chromebook ${number} to student ${student}`);
-					saveState();
-					updateCounts();
-					renderGrid();
-					document.getElementById('deviceModal').classList.remove('open');
-				});
-				actions.appendChild(form);
-			}
-			const closeBtn = document.getElementById('closeDevice');
-			closeBtn.addEventListener('click', () => {
-				document.getElementById('deviceModal').classList.remove('open');
-			});
-		}
-
 		checkoutButton.addEventListener('click', () => openModal(checkoutModal));
 		checkinButton.addEventListener('click', () => openModal(checkinModal));
 		closeCheckout.addEventListener('click', () => closeModal(checkoutModal));
@@ -262,57 +164,35 @@
 
 		checkoutForm.addEventListener('submit', event => {
 			event.preventDefault();
-			const deviceRaw = document.getElementById('checkoutDevice').value.trim();
+			const device = document.getElementById('checkoutDevice').value.trim();
 			const student = document.getElementById('checkoutStudent').value.trim();
-			if (!deviceRaw || !student) return;
-			// parse device number from input (accept '5', 'CB-5', 'cb5')
-			let m = deviceRaw.match(/(\d{1,2})$/);
-			if (!m) {
-				addLog(`Invalid device identifier: ${deviceRaw}`);
-				return;
-			}
-			const num = parseInt(m[1], 10);
-			if (Number.isNaN(num) || num < 1 || num > TOTAL_DEVICES) {
-				addLog(`Device number out of range: ${deviceRaw}`);
-				return;
-			}
-			if (state.devices[String(num)]) {
-				addLog(`Chromebook ${num} is already checked out`);
-				return;
-			}
-			state.devices[String(num)] = student;
-			addLog(`Checked out Chromebook ${num} to student ${student}`);
+			if (!device || !student) return;
+				state.checkouts[student] = device;
+				addLog(`Checked out Chromebook ${device} to student ${student}`);
 			checkoutForm.reset();
 			closeModal(checkoutModal);
-			saveState();
-			updateCounts();
-			renderGrid();
+				updateCounts();
 		});
 
 		checkinForm.addEventListener('submit', event => {
 			event.preventDefault();
 			const student = document.getElementById('checkinStudent').value.trim();
 			if (!student) return;
-			// find device for student
-			const found = Object.keys(state.devices).find(k => state.devices[k] === student);
-			if (found) {
-				delete state.devices[found];
-				addLog(`Checked in Chromebook ${found} from student ${student}`);
-				saveState();
-				updateCounts();
-				renderGrid();
+			const device = state.checkouts[student];
+			if (device) {
+				delete state.checkouts[student];
+				addLog(`Checked in Chromebook ${device} from student ${student}`);
 			} else {
 				addLog(`No Chromebook found for student ${student}`);
 			}
 			checkinForm.reset();
 			closeModal(checkinModal);
+			updateCounts();
 		});
 
 		// load persisted state and initialize counts on load
 		loadState();
-		ensureDevices();
 		updateCounts();
-		renderGrid();
 		renderActivity();
 	</script>
 </body>
