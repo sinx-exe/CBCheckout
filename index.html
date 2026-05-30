@@ -1,510 +1,226 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-	<meta charset="UTF-8" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>Chromebook Checkout</title>
-	<link rel="stylesheet" href="styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chromebook Checkout</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
 </head>
 <body>
-	<div class="page-shell">
-		<header class="hero-panel">
-			<div>
-				<p class="eyebrow"></p>
-				<h1>Chromebook Checkout</h1>
-			</div>
-			<div class="login-section">
-				<button class="secondary-btn" id="loginButton">Login</button>
-				<span class="login-label" id="loginStatus">Not signed in</span>
-			</div>
-		</header>
 
-		<section class="action-grid">
-			<button class="action-card checkin-card" id="checkinButton">Checkin</button>
-			<button class="action-card checkout-card" id="checkoutButton">Checkout</button>
-		</section>
+  <!-- LOGIN OVERLAY -->
+  <div id="login-overlay" class="login-overlay">
+    <div class="login-box">
+      <div class="login-logo">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <rect x="4" y="10" width="32" height="20" rx="3" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M12 30 L8 36 M28 30 L32 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M6 36 L34 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="20" cy="20" r="3" fill="currentColor"/>
+        </svg>
+      </div>
+      <h2 class="login-title">CHROMEBOOK CHECKOUT</h2>
+      <p class="login-subtitle">Staff Login Required</p>
+      <div class="login-fields">
+        <div class="field-group">
+          <label>USERNAME</label>
+          <input type="text" id="login-username" placeholder="Enter username" autocomplete="off" />
+        </div>
+        <div class="field-group">
+          <label>PASSWORD</label>
+          <input type="password" id="login-password" placeholder="Enter password" />
+        </div>
+        <div id="login-error" class="login-error hidden">Incorrect credentials. Try again.</div>
+        <button class="btn-login" onclick="doLogin()">LOG IN</button>
+      </div>
+    </div>
+  </div>
 
-		<section class="hero-card stats-area">
-			<div class="stats-grid">
-				<div class="stat-card available">
-					<div class="stat-number" id="availableCount">32</div>
-					<div class="stat-label">Available</div>
-				</div>
-				<div class="stat-card checkedout">
-					<div class="stat-number" id="checkedOutCount">0</div>
-					<div class="stat-label">Checked Out</div>
-				</div>
-			</div>
-		</section>
+  <!-- MAIN APP -->
+  <div id="app" class="app hidden">
 
-		<section class="grid-panel">
-			<h2>Devices</h2>
-			<div id="deviceGrid" class="device-grid" aria-label="Device grid"></div>
-		</section>
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-left">
+        <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+          <rect x="4" y="10" width="32" height="20" rx="3" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M12 30 L8 36 M28 30 L32 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M6 36 L34 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="20" cy="20" r="3" fill="currentColor"/>
+        </svg>
+        <div>
+          <h1 class="app-title">CHROMEBOOK CHECKOUT</h1>
+          <span class="app-sub">Device Management System</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="user-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span id="logged-in-user">username</span>
+        </span>
+        <button class="btn-theme" onclick="toggleTheme()" title="Toggle theme">
+          <span id="theme-icon">☀️</span>
+        </button>
+        <button class="btn-logout" onclick="doLogout()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          LOG OUT
+        </button>
+      </div>
+    </header>
 
-		<section class="log-panel">
-			<h2>Activity Log</h2>
-			<ul id="activityLog" class="activity-log">
-				<li class="log-empty">No actions yet. Use checkout or checkin to start logging.</li>
-			</ul>
-		</section>
-	</div>
+    <!-- ACTION BUTTONS -->
+    <section class="actions-section">
+      <button class="action-btn checkout-btn" onclick="openModal('checkout')">
+        <div class="action-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </div>
+        <div class="action-text">
+          <span class="action-label">CHECK OUT</span>
+          <span class="action-desc">Assign device to student</span>
+        </div>
+      </button>
+      <button class="action-btn checkin-btn" onclick="openModal('checkin')">
+        <div class="action-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </div>
+        <div class="action-text">
+          <span class="action-label">CHECK IN</span>
+          <span class="action-desc">Return device to inventory</span>
+        </div>
+      </button>
+    </section>
 
-	<div class="modal" id="checkoutModal" aria-hidden="true">
-		<div class="modal-content">
-			<button class="modal-close" id="closeCheckout">×</button>
-			<h3>Checkout Chromebook</h3>
-			<form id="checkoutForm">
-				<label for="checkoutDevice">Serial Number</label>
-				<input type="text" id="checkoutDevice" name="device" required placeholder="SN1001" />
-				<label for="checkoutStudent">Student ID</label>
-				<input type="text" id="checkoutStudent" name="student" required placeholder="xxx" />
-				<button type="submit" class="primary-btn">Confirm Checkout</button>
-			</form>
-		</div>
-	</div>
+    <!-- STATS CARDS -->
+    <section class="stats-section">
+      <div class="stat-card available-card">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-number" id="available-count">32</span>
+          <span class="stat-label">AVAILABLE</span>
+        </div>
+      </div>
+      <div class="stat-card checkedout-card">
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-number" id="checkedout-count">0</span>
+          <span class="stat-label">CHECKED OUT</span>
+        </div>
+      </div>
+    </section>
 
-	<div class="modal" id="checkinModal" aria-hidden="true">
-		<div class="modal-content">
-			<button class="modal-close" id="closeCheckin">×</button>
-			<h3>Checkin Chromebook</h3>
-			<form id="checkinForm">
-				<label for="checkinStudent">Student ID</label>
-				<input type="text" id="checkinStudent" name="student" required placeholder="e.g. S12345" />
-				<button type="submit" class="primary-btn">Confirm Checkin</button>
-			</form>
-		</div>
-	</div>
+    <!-- CHROMEBOOK GRID -->
+    <section class="grid-section">
+      <div class="section-header">
+        <h2 class="section-title">DEVICE INVENTORY</h2>
+        <span class="section-hint">Click any device to view details</span>
+      </div>
+      <div class="chromebook-grid" id="chromebook-grid">
+        <!-- Generated by JS -->
+      </div>
+    </section>
 
-	<div class="modal" id="deviceModal" aria-hidden="true">
-		<div class="modal-content">
-			<button class="modal-close" id="closeDevice">×</button>
-			<h3 id="deviceModalTitle">Device</h3>
-			<div id="deviceModalBody"></div>
-		</div>
-	</div>
+    <!-- ACTIVITY LOG -->
+    <section class="log-section">
+      <div class="section-header">
+        <h2 class="section-title">ACTIVITY LOG</h2>
+        <button class="btn-clear-log" onclick="clearLog()">CLEAR LOG</button>
+      </div>
+      <div class="log-container" id="activity-log">
+        <div class="log-empty">No activity recorded yet.</div>
+      </div>
+    </section>
 
-	<div class="modal" id="loginModal" aria-hidden="true">
-		<div class="modal-content">
-			<button class="modal-close" id="closeLogin">×</button>
-			<h3>Sign In</h3>
-			<form id="loginForm">
-				<label for="loginUsername">Username</label>
-				<input type="text" id="loginUsername" required placeholder="username" />
-				<label for="loginPassword">Password</label>
-				<input type="password" id="loginPassword" required placeholder="password" />
-				<button type="submit" class="primary-btn">Sign In</button>
-			</form>
-		</div>
-	</div>
+  </div>
 
-	<script>
-		const checkoutButton = document.getElementById('checkoutButton');
-		const checkinButton = document.getElementById('checkinButton');
-		const checkoutModal = document.getElementById('checkoutModal');
-		const checkinModal = document.getElementById('checkinModal');
-		const closeCheckout = document.getElementById('closeCheckout');
-		const closeCheckin = document.getElementById('closeCheckin');
-		const checkoutForm = document.getElementById('checkoutForm');
-		const checkinForm = document.getElementById('checkinForm');
-		const activityLog = document.getElementById('activityLog');
-		const loginButton = document.getElementById('loginButton');
-		const loginModal = document.getElementById('loginModal');
-		const closeLogin = document.getElementById('closeLogin');
-		const loginForm = document.getElementById('loginForm');
-		const loginUsername = document.getElementById('loginUsername');
-		const loginPassword = document.getElementById('loginPassword');
-		const loginStatus = document.getElementById('loginStatus');
-		const TOTAL_DEVICES = 32;
-		const STORAGE_KEY = 'cbcheckouts_v1';
-		const LOGIN_USER_KEY = 'cbcheckouts_currentUser';
-		const VALID_USER = 'username';
-		const VALID_PASS = 'password';
-		let currentUser = null;
-		const DEFAULT_DEVICE_META = {};
-		for (let i = 1; i <= TOTAL_DEVICES; i++) {
-			const padded = String(i).padStart(2, '0');
-			DEFAULT_DEVICE_META[String(i)] = {
-				barcode: `CB${padded}BAR`,
-				serial: `SN${1000 + i}`
-			};
-		}
-		const state = {
-			devices: {},
-			activity: [],
-			deviceMeta: {}
-		};
+  <!-- CHECKOUT / CHECKIN MODAL -->
+  <div id="action-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('action-modal')">✕</button>
+      <h3 class="modal-title" id="modal-title">CHECK OUT</h3>
+      <p class="modal-desc" id="modal-desc">Assign a Chromebook to a student.</p>
 
-		function ensureDevices() {
-			for (let i = 1; i <= TOTAL_DEVICES; i++) {
-				const key = String(i);
-				if (!Object.prototype.hasOwnProperty.call(state.devices, key)) {
-					state.devices[key] = null;
-				}
-			}
-		}
+      <div id="checkout-fields">
+        <div class="field-group">
+          <label>CHROMEBOOK SERIAL #</label>
+          <input type="text" id="co-serial" placeholder="e.g. CB-000001" autocomplete="off"/>
+        </div>
+        <div class="field-group">
+          <label>STUDENT ID</label>
+          <input type="text" id="co-student" placeholder="e.g. S12345" autocomplete="off"/>
+        </div>
+      </div>
 
-		function ensureMeta() {
-			for (let i = 1; i <= TOTAL_DEVICES; i++) {
-				const key = String(i);
-				if (!Object.prototype.hasOwnProperty.call(state.deviceMeta, key)) {
-					state.deviceMeta[key] = { ...DEFAULT_DEVICE_META[key] };
-				}
-			}
-		}
+      <div id="checkin-fields" class="hidden">
+        <div class="field-group">
+          <label>STUDENT ID</label>
+          <input type="text" id="ci-student" placeholder="e.g. S12345" autocomplete="off"/>
+        </div>
+      </div>
 
-		function getDeviceMeta(deviceNum) {
-			return state.deviceMeta[deviceNum] || DEFAULT_DEVICE_META[deviceNum] || { barcode: '', serial: '' };
-		}
+      <div id="modal-error" class="login-error hidden"></div>
+      <button class="btn-submit" id="modal-submit-btn" onclick="submitAction()">SUBMIT</button>
+    </div>
+  </div>
 
-		function getStorageKey() {
-			return currentUser ? `${STORAGE_KEY}_${currentUser}` : STORAGE_KEY;
-		}
+  <!-- DEVICE DETAIL MODAL -->
+  <div id="device-modal" class="modal-overlay hidden">
+    <div class="modal-box device-modal-box">
+      <button class="modal-close" onclick="closeModal('device-modal')">✕</button>
+      <div class="device-modal-header">
+        <div class="device-number-badge" id="dm-number">01</div>
+        <div>
+          <h3 class="modal-title" id="dm-title">CHROMEBOOK #1</h3>
+          <span class="status-pill" id="dm-status-pill">AVAILABLE</span>
+        </div>
+      </div>
 
-		function saveState() {
-			if (!currentUser) return;
-			try {
-				const payload = { devices: state.devices, activity: state.activity, deviceMeta: state.deviceMeta };
-				localStorage.setItem(getStorageKey(), JSON.stringify(payload));
-			} catch (e) {
-				console.warn('Failed to save state', e);
-			}
-		}
+      <div class="device-detail-grid">
+        <div class="detail-row">
+          <span class="detail-label">BARCODE</span>
+          <div class="detail-value-row">
+            <span class="detail-value mono" id="dm-barcode">—</span>
+            <button class="edit-icon-btn" id="dm-barcode-edit-btn" onclick="editField('barcode')" title="Edit barcode">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <div class="inline-edit hidden" id="dm-barcode-edit">
+              <input type="text" id="dm-barcode-input" />
+              <button onclick="saveField('barcode')">✓</button>
+              <button onclick="cancelEdit('barcode')">✕</button>
+            </div>
+          </div>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">SERIAL NUMBER</span>
+          <div class="detail-value-row">
+            <span class="detail-value mono" id="dm-serial">—</span>
+            <button class="edit-icon-btn" id="dm-serial-edit-btn" onclick="editField('serial')" title="Edit serial">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <div class="inline-edit hidden" id="dm-serial-edit">
+              <input type="text" id="dm-serial-input" />
+              <button onclick="saveField('serial')">✓</button>
+              <button onclick="cancelEdit('serial')">✕</button>
+            </div>
+          </div>
+        </div>
+        <div class="detail-row" id="dm-student-row">
+          <span class="detail-label">CHECKED OUT BY</span>
+          <span class="detail-value mono" id="dm-student">—</span>
+        </div>
+        <div class="detail-row" id="dm-time-row">
+          <span class="detail-label">CHECKOUT TIME</span>
+          <span class="detail-value mono" id="dm-time">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
-		function saveLoggedInUser() {
-			if (currentUser) {
-				localStorage.setItem(LOGIN_USER_KEY, currentUser);
-			}
-		}
-
-		function clearLoggedInUser() {
-			localStorage.removeItem(LOGIN_USER_KEY);
-		}
-
-		function loadLoggedInUser() {
-			const user = localStorage.getItem(LOGIN_USER_KEY);
-			if (user === VALID_USER) {
-				currentUser = user;
-			}
-		}
-
-		function loadState() {
-			let hasSavedState = false;
-			if (!currentUser) {
-				state.devices = {};
-				state.activity = [];
-				state.deviceMeta = {};
-				ensureDevices();
-				ensureMeta();
-				return;
-			}
-			try {
-				const raw = localStorage.getItem(getStorageKey());
-				if (raw) {
-					hasSavedState = true;
-					const parsed = JSON.parse(raw);
-					if (parsed && typeof parsed === 'object') {
-						if (parsed.devices && typeof parsed.devices === 'object') {
-							state.devices = parsed.devices;
-						} else if (parsed.checkouts && typeof parsed.checkouts === 'object') {
-							// legacy format: map student->deviceString, attempt to convert
-							for (const [student, deviceStr] of Object.entries(parsed.checkouts)) {
-								const numMatch = String(deviceStr).match(/(\d+)/);
-								if (numMatch) {
-									state.devices[String(parseInt(numMatch[1], 10))] = student;
-								}
-							}
-						}
-						if (parsed.deviceMeta && typeof parsed.deviceMeta === 'object') {
-							state.deviceMeta = parsed.deviceMeta;
-						}
-						if (Array.isArray(parsed.activity)) {
-							state.activity = parsed.activity;
-						}
-					}
-				}
-			} catch (e) {
-				console.warn('Failed to load state', e);
-			}
-			ensureDevices();
-			ensureMeta();
-			if (!hasSavedState) {
-				saveState();
-			}
-		}
-
-		function updateCounts() {
-			const checked = Object.values(state.devices).filter(Boolean).length;
-			const available = Math.max(0, TOTAL_DEVICES - checked);
-			document.getElementById('checkedOutCount').textContent = checked;
-			document.getElementById('availableCount').textContent = available;
-		}
-
-		const deviceGrid = document.getElementById('deviceGrid');
-		const deviceModal = document.getElementById('deviceModal');
-		const closeDevice = document.getElementById('closeDevice');
-		const deviceModalTitle = document.getElementById('deviceModalTitle');
-		const deviceModalBody = document.getElementById('deviceModalBody');
-
-		function renderGrid() {
-			deviceGrid.innerHTML = '';
-			for (let i = 1; i <= TOTAL_DEVICES; i++) {
-				const key = String(i);
-				const btn = document.createElement('button');
-				btn.className = 'device-btn ' + (state.devices[key] ? 'checkedout' : 'available');
-				btn.textContent = key;
-				btn.dataset.device = key;
-				btn.addEventListener('click', () => openDeviceModal(key));
-				deviceGrid.appendChild(btn);
-			}
-		}
-
-		function setControlsEnabled(enabled) {
-			checkoutButton.disabled = !enabled;
-			checkinButton.disabled = !enabled;
-			const gridButtons = document.querySelectorAll('.device-btn');
-			gridButtons.forEach(btn => btn.disabled = !enabled);
-		}
-
-		function renderLoginStatus() {
-			loginStatus.textContent = currentUser ? `Signed in as ${currentUser}` : 'Not signed in';
-			loginButton.textContent = currentUser ? 'Logout' : 'Login';
-		}
-
-		function openDeviceModal(deviceNum) {
-			deviceModalTitle.textContent = `Device ${deviceNum}`;
-			const student = state.devices[String(deviceNum)];
-			const meta = getDeviceMeta(String(deviceNum));
-			deviceModalBody.innerHTML = '';
-			const info = document.createElement('div');
-			info.className = 'device-info';
-			info.innerHTML = `
-				<div class="editable-meta-row" id="barcodeRow">
-					<span><strong>Barcode:</strong> <span id="barcodeValue">${meta.barcode}</span></span>
-					<button type="button" class="secondary-btn small-btn" id="editBarcode">Edit</button>
-				</div>
-				<div class="editable-meta-row" id="serialRow">
-					<span><strong>Serial:</strong> <span id="serialValue">${meta.serial}</span></span>
-					<button type="button" class="secondary-btn small-btn" id="editSerial">Edit</button>
-				</div>
-				<p><strong>Status:</strong> ${student ? 'Checked out' : 'Available'}</p>
-			`;
-			deviceModalBody.appendChild(info);
-
-			const openMetaEditor = (field, label, currentValue) => {
-				const row = info.querySelector(`#${field}Row`);
-				row.innerHTML = `
-					<div class="meta-edit-group">
-						<label for="edit${field}Input">${label}</label>
-						<input id="edit${field}Input" class="meta-input" value="${currentValue}" />
-						<div class="meta-edit-actions">
-							<button type="button" class="secondary-btn small-btn" id="save${field}">Save</button>
-							<button type="button" class="secondary-btn small-btn" id="cancel${field}">Cancel</button>
-						</div>
-					</div>
-				`;
-
-				row.querySelector(`#save${field}`).addEventListener('click', () => {
-					const input = row.querySelector(`#edit${field}Input`);
-					const newValue = input.value.trim();
-					if (!newValue) {
-						alert(`${label} cannot be empty.`);
-						return;
-					}
-					state.deviceMeta[String(deviceNum)][field] = newValue;
-					addLog(`Updated ${label.toLowerCase()} for Chromebook ${deviceNum} to ${newValue}`);
-					saveState();
-					openDeviceModal(deviceNum);
-				});
-
-				row.querySelector(`#cancel${field}`).addEventListener('click', () => {
-					openDeviceModal(deviceNum);
-				});
-			};
-
-			info.querySelector('#editBarcode').addEventListener('click', () => openMetaEditor('barcode', 'Barcode', meta.barcode));
-			info.querySelector('#editSerial').addEventListener('click', () => openMetaEditor('serial', 'Serial', meta.serial));
-
-			if (student) {
-				const p = document.createElement('p');
-				p.textContent = `Checked out to: ${student}`;
-				const btn = document.createElement('button');
-				btn.className = 'primary-btn';
-				btn.textContent = 'Checkin';
-				btn.addEventListener('click', () => {
-					state.devices[String(deviceNum)] = null;
-					addLog(`Checked in Chromebook ${deviceNum} from student ${student}`);
-					saveState();
-					updateCounts();
-					renderGrid();
-					renderActivity();
-					closeModal(deviceModal);
-				});
-				deviceModalBody.appendChild(p);
-				deviceModalBody.appendChild(btn);
-			} else {
-				const form = document.createElement('form');
-				form.innerHTML = `
-					<label for="deviceStudent">Student ID</label>
-					<input id="deviceStudent" name="student" required placeholder="e.g. S12345" />
-				`;
-				const submit = document.createElement('button');
-				submit.className = 'primary-btn';
-				submit.textContent = 'Checkout';
-				submit.type = 'button';
-				submit.addEventListener('click', () => {
-					const input = form.querySelector('#deviceStudent');
-					const studentId = input.value.trim();
-					if (!studentId) return;
-					state.devices[String(deviceNum)] = studentId;
-					addLog(`Checked out Chromebook ${deviceNum} to student ${studentId}`);
-					saveState();
-					updateCounts();
-					renderGrid();
-					renderActivity();
-					closeModal(deviceModal);
-				});
-				deviceModalBody.appendChild(form);
-				deviceModalBody.appendChild(submit);
-			}
-			openModal(deviceModal);
-		}
-
-		function openModal(modal) {
-			modal.classList.add('open');
-			modal.setAttribute('aria-hidden', 'false');
-		}
-
-		function closeModal(modal) {
-			modal.classList.remove('open');
-			modal.setAttribute('aria-hidden', 'true');
-		}
-
-		function addLog(message) {
-			const text = `${new Date().toLocaleTimeString()} — ${message}`;
-			// store newest first
-			state.activity.unshift(text);
-			saveState();
-			const emptyNode = document.querySelector('.log-empty');
-			if (emptyNode) emptyNode.remove();
-			const item = document.createElement('li');
-			item.textContent = text;
-			activityLog.prepend(item);
-		}
-
-		function renderActivity() {
-			activityLog.innerHTML = '';
-			if (!state.activity || state.activity.length === 0) {
-				const empty = document.createElement('li');
-				empty.className = 'log-empty';
-				empty.textContent = 'No actions yet. Use checkout or checkin to start logging.';
-				activityLog.appendChild(empty);
-				return;
-			}
-			for (const entry of state.activity) {
-				const item = document.createElement('li');
-				item.textContent = entry;
-				activityLog.appendChild(item);
-			}
-		}
-
-		checkoutButton.addEventListener('click', () => openModal(checkoutModal));
-		checkinButton.addEventListener('click', () => openModal(checkinModal));
-		closeCheckout.addEventListener('click', () => closeModal(checkoutModal));
-		closeCheckin.addEventListener('click', () => closeModal(checkinModal));
-		closeDevice.addEventListener('click', () => closeModal(deviceModal));
-		loginButton.addEventListener('click', () => {
-			if (currentUser) {
-				currentUser = null;
-				clearLoggedInUser();
-				loadState();
-				renderGrid();
-				updateCounts();
-				renderActivity();
-				renderLoginStatus();
-				setControlsEnabled(false);
-			} else {
-				openModal(loginModal);
-			}
-		});
-		closeLogin.addEventListener('click', () => closeModal(loginModal));
-		loginForm.addEventListener('submit', event => {
-			event.preventDefault();
-			const username = loginUsername.value.trim();
-			const password = loginPassword.value.trim();
-			if (username === VALID_USER && password === VALID_PASS) {
-				currentUser = username;
-				saveLoggedInUser();
-				loadState();
-				renderGrid();
-				updateCounts();
-				renderActivity();
-				renderLoginStatus();
-				setControlsEnabled(true);
-				closeModal(loginModal);
-				loginForm.reset();
-			} else {
-				alert('Invalid username or password.');
-			}
-		});
-
-		checkoutForm.addEventListener('submit', event => {
-			event.preventDefault();
-			const serial = document.getElementById('checkoutDevice').value.trim();
-			const student = document.getElementById('checkoutStudent').value.trim();
-			if (!serial || !student) return;
-			const deviceNum = Object.entries(deviceMeta).find(([, meta]) => meta.serial === serial)?.[0];
-			if (!deviceNum) {
-				alert('No Chromebook found for that serial number.');
-				return;
-			}
-			if (state.devices[deviceNum]) {
-				alert(`Device ${deviceNum} is already checked out.`);
-				return;
-			}
-			state.devices[deviceNum] = student;
-			addLog(`Checked out Chromebook ${deviceNum} (serial ${serial}) to student ${student}`);
-			saveState();
-			checkoutForm.reset();
-			closeModal(checkoutModal);
-			updateCounts();
-			renderGrid();
-			renderActivity();
-		});
-
-		checkinForm.addEventListener('submit', event => {
-			event.preventDefault();
-			const student = document.getElementById('checkinStudent').value.trim();
-			if (!student) return;
-			let found = null;
-			for (const [num, sid] of Object.entries(state.devices)) {
-				if (sid === student) {
-					found = num;
-					break;
-				}
-			}
-			if (found) {
-				state.devices[found] = null;
-				addLog(`Checked in Chromebook ${found} from student ${student}`);
-			} else {
-				addLog(`No Chromebook found for student ${student}`);
-			}
-			saveState();
-			checkinForm.reset();
-			closeModal(checkinModal);
-			updateCounts();
-			renderGrid();
-			renderActivity();
-		});
-
-		// load logged-in account and its persisted state on load
-		loadLoggedInUser();
-		loadState();
-		renderGrid();
-		updateCounts();
-		renderActivity();
-		renderLoginStatus();
-		setControlsEnabled(!!currentUser);
-	</script>
+  <script src="app.js"></script>
 </body>
 </html>
