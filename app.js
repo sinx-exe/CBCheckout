@@ -7,8 +7,8 @@ const CREDS = { username: "username", password: "password" };
 
 // ── STATE ──
 let isLoggedIn = false;
-let currentAction = null; // 'checkout' | 'checkin'
-let openDeviceIndex = null; // which chromebook is open in detail modal
+let currentAction = null;
+let openDeviceIndex = null;
 
 const chromebooks = Array.from({ length: TOTAL }, (_, i) => ({
   id: i + 1,
@@ -17,7 +17,7 @@ const chromebooks = Array.from({ length: TOTAL }, (_, i) => ({
   checkedOut: false,
   studentId: null,
   checkoutTime: null,
-  log: [], // per-device activity history
+  log: [],
 }));
 
 const activityLog = [];
@@ -27,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderGrid();
   updateStats();
 
-  // Allow Enter key in login fields
   ['login-username', 'login-password'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => {
       if (e.key === 'Enter') doLogin();
@@ -66,7 +65,6 @@ function doLogout() {
   document.getElementById('login-username').value = '';
   document.getElementById('login-password').value = '';
   document.getElementById('login-error').classList.add('hidden');
-  // Close any open modals
   closeModal('action-modal');
   closeModal('device-modal');
 }
@@ -102,8 +100,7 @@ function renderGrid() {
 // ── STATS ──
 function updateStats() {
   const out = chromebooks.filter(c => c.checkedOut).length;
-  const avail = TOTAL - out;
-  document.getElementById('available-count').textContent = avail;
+  document.getElementById('available-count').textContent = TOTAL - out;
   document.getElementById('checkedout-count').textContent = out;
 }
 
@@ -112,36 +109,30 @@ function openModal(type) {
   if (!isLoggedIn) return;
   currentAction = type;
 
-  const modal  = document.getElementById('action-modal');
-  const title  = document.getElementById('modal-title');
-  const desc   = document.getElementById('modal-desc');
-  const coFlds = document.getElementById('checkout-fields');
-  const ciFlds = document.getElementById('checkin-fields');
-  const errEl  = document.getElementById('modal-error');
+  const errEl     = document.getElementById('modal-error');
   const submitBtn = document.getElementById('modal-submit-btn');
-
   errEl.classList.add('hidden');
 
   if (type === 'checkout') {
-    title.textContent = 'CHECK OUT';
-    desc.textContent  = 'Assign a Chromebook to a student.';
-    coFlds.classList.remove('hidden');
-    ciFlds.classList.add('hidden');
+    document.getElementById('modal-title').textContent = 'CHECK OUT';
+    document.getElementById('modal-desc').textContent  = 'Assign a Chromebook to a student.';
+    document.getElementById('checkout-fields').classList.remove('hidden');
+    document.getElementById('checkin-fields').classList.add('hidden');
     submitBtn.style.background = 'var(--red)';
     document.getElementById('co-serial').value  = '';
     document.getElementById('co-student').value = '';
     setTimeout(() => document.getElementById('co-serial').focus(), 100);
   } else {
-    title.textContent = 'CHECK IN';
-    desc.textContent  = 'Return a Chromebook to inventory.';
-    coFlds.classList.add('hidden');
-    ciFlds.classList.remove('hidden');
+    document.getElementById('modal-title').textContent = 'CHECK IN';
+    document.getElementById('modal-desc').textContent  = 'Return a Chromebook to inventory.';
+    document.getElementById('checkout-fields').classList.add('hidden');
+    document.getElementById('checkin-fields').classList.remove('hidden');
     submitBtn.style.background = 'var(--green)';
     document.getElementById('ci-student').value = '';
     setTimeout(() => document.getElementById('ci-student').focus(), 100);
   }
 
-  modal.classList.remove('hidden');
+  document.getElementById('action-modal').classList.remove('hidden');
 }
 
 function closeModal(id) {
@@ -161,9 +152,7 @@ function submitAction() {
       return;
     }
 
-    const cb = chromebooks.find(c =>
-      c.serial.toLowerCase() === serial.toLowerCase()
-    );
+    const cb = chromebooks.find(c => c.serial.toLowerCase() === serial.toLowerCase());
 
     if (!cb) {
       showModalError(`No Chromebook found with serial "${serial}".`);
@@ -174,13 +163,12 @@ function submitAction() {
       return;
     }
 
-    cb.checkedOut = true;
-    cb.studentId  = studentId;
+    cb.checkedOut   = true;
+    cb.studentId    = studentId;
     cb.checkoutTime = new Date();
-    addLog('checkout', `Chromebook #${cb.id} (${cb.serial}) checked out to Student ${studentId}`, cb.id);
+    addLog('checkout', `#${cb.id} (${cb.serial}) checked out to Student ${studentId}`, cb.id);
 
   } else {
-    // checkin — find by student ID
     const studentId = document.getElementById('ci-student').value.trim();
 
     if (!studentId) {
@@ -197,10 +185,11 @@ function submitAction() {
       return;
     }
 
+    const prevStudent = cb.studentId;
     cb.checkedOut   = false;
     cb.studentId    = null;
     cb.checkoutTime = null;
-    addLog('checkin', `Chromebook #${cb.id} (${cb.serial}) returned by Student ${studentId}`, cb.id);
+    addLog('checkin', `#${cb.id} (${cb.serial}) returned by Student ${prevStudent}`, cb.id);
   }
 
   renderGrid();
@@ -220,8 +209,8 @@ function openDeviceModal(id) {
   const cb = chromebooks.find(c => c.id === id);
   if (!cb) return;
 
-  document.getElementById('dm-number').textContent = String(id).padStart(2, '0');
-  document.getElementById('dm-title').textContent  = `CHROMEBOOK #${id}`;
+  document.getElementById('dm-number').textContent  = String(id).padStart(2, '0');
+  document.getElementById('dm-title').textContent   = `CHROMEBOOK #${id}`;
   document.getElementById('dm-barcode').textContent = cb.barcode;
   document.getElementById('dm-serial').textContent  = cb.serial;
 
@@ -236,7 +225,6 @@ function openDeviceModal(id) {
 
   const studentRow = document.getElementById('dm-student-row');
   const timeRow    = document.getElementById('dm-time-row');
-
   if (cb.checkedOut) {
     document.getElementById('dm-student').textContent = cb.studentId || '—';
     document.getElementById('dm-time').textContent    = formatDateTime(cb.checkoutTime);
@@ -247,16 +235,15 @@ function openDeviceModal(id) {
     timeRow.style.display    = 'none';
   }
 
-  // Show/hide edit buttons based on login
-  ['dm-barcode-edit-btn', 'dm-serial-edit-btn'].forEach(id => {
-    document.getElementById(id).style.display = isLoggedIn ? '' : 'none';
+  ['dm-barcode-edit-btn', 'dm-serial-edit-btn'].forEach(btnId => {
+    document.getElementById(btnId).style.display = isLoggedIn ? '' : 'none';
   });
 
-  // Hide any inline edits
   cancelEdit('barcode');
   cancelEdit('serial');
 
   renderDeviceLog(cb);
+
   document.getElementById('device-modal').classList.remove('hidden');
 }
 
@@ -286,7 +273,7 @@ function editField(field) {
 
 function saveField(field) {
   if (!isLoggedIn) return;
-  const cb    = chromebooks.find(c => c.id === openDeviceIndex);
+  const cb  = chromebooks.find(c => c.id === openDeviceIndex);
   if (!cb) return;
   const input = document.getElementById(`dm-${field}-input`);
   const val   = input.value.trim();
@@ -296,10 +283,13 @@ function saveField(field) {
   if (field === 'barcode') cb.barcode = val;
   else                     cb.serial  = val;
 
-  addLog('edit', `Chromebook #${cb.id} ${field} changed from "${oldVal}" to "${val}"`, cb.id);
+  addLog('edit', `#${cb.id} ${field} changed: "${oldVal}" → "${val}"`, cb.id);
 
   document.getElementById(`dm-${field}`).textContent = val;
   cancelEdit(field);
+
+  // Refresh device log in the open modal
+  renderDeviceLog(cb);
 }
 
 function cancelEdit(field) {
@@ -313,28 +303,35 @@ function cancelEdit(field) {
 
 // ── ACTIVITY LOG ──
 function addLog(type, message, cbId) {
-  const entry = { type, message, time: new Date() };
+  const now   = new Date();
+  const entry = { type, message, time: now };
   activityLog.unshift(entry);
+
   if (cbId != null) {
     const cb = chromebooks.find(c => c.id === cbId);
-    if (cb) cb.log.unshift({ type, message, time: entry.time });
+    if (cb) {
+      cb.log.unshift({ type, message, time: now });
+    }
   }
+
   renderLog();
 }
 
 function renderDeviceLog(cb) {
   const container = document.getElementById('dm-log');
   const countEl   = document.getElementById('dm-log-count');
-  if (!container) return;
-  countEl.textContent = cb.log.length === 1 ? '1 event' : `${cb.log.length} events`;
-  if (cb.log.length === 0) {
+  if (!container || !countEl) return;
+
+  const count = cb.log.length;
+  countEl.textContent = count === 1 ? '1 event' : `${count} events`;
+
+  if (count === 0) {
     container.innerHTML = '<div class="log-empty">No activity for this device yet.</div>';
     return;
   }
+
   container.innerHTML = cb.log.map(entry => {
-    const typeClass = entry.type === 'checkout' ? 'checkout'
-                    : entry.type === 'checkin'  ? 'checkin'
-                    : 'checkin';
+    const typeClass = entry.type === 'checkout' ? 'checkout' : 'checkin';
     const typeLabel = entry.type === 'checkout' ? 'OUT'
                     : entry.type === 'checkin'  ? 'IN'
                     : 'EDIT';
@@ -356,9 +353,7 @@ function renderLog() {
   }
 
   container.innerHTML = activityLog.map(entry => {
-    const typeClass = entry.type === 'checkout' ? 'checkout'
-                    : entry.type === 'checkin'  ? 'checkin'
-                    : 'checkin'; // 'edit' uses green styling
+    const typeClass = entry.type === 'checkout' ? 'checkout' : 'checkin';
     const typeLabel = entry.type === 'checkout' ? 'OUT'
                     : entry.type === 'checkin'  ? 'IN'
                     : 'EDIT';
@@ -397,13 +392,12 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;');
 }
 
-// Close modals on overlay click
+// ── MODAL OVERLAY CLICK TO CLOSE ──
 document.addEventListener('click', (e) => {
   if (e.target.id === 'action-modal') closeModal('action-modal');
   if (e.target.id === 'device-modal') closeModal('device-modal');
 });
 
-// ESC to close modals
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeModal('action-modal');
