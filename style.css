@@ -670,7 +670,70 @@ body {
 .inline-edit button:first-of-type { border-color: var(--green); color: var(--green); }
 .inline-edit button:last-of-type  { border-color: var(--border); color: var(--text3); }
 
-/* ── SCROLLBAR ── */
+/* ── DEVICE DETAIL LOG ── */
+.device-log-section {
+  margin-top: 18px;
+}
+
+.device-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.device-log-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--text2);
+}
+
+.device-log-count {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text3);
+}
+
+.device-log-container {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.device-log-container .log-empty {
+  padding: 20px;
+  font-size: 0.73rem;
+}
+
+.device-log-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  animation: fadeIn 0.2s ease;
+}
+.device-log-entry:last-child { border-bottom: none; }
+
+.device-log-entry .log-time {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text2);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.device-log-entry .log-message {
+  font-size: 0.72rem;
+  color: var(--text);
+}
+
+.device-log-container::-webkit-scrollbar { width: 4px; }
+.device-log-container::-webkit-scrollbar-track { background: transparent; }
+.device-log-container::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 .log-container::-webkit-scrollbar { width: 6px; }
 .log-container::-webkit-scrollbar-track { background: transparent; }
 .log-container::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }

@@ -17,6 +17,7 @@ const chromebooks = Array.from({ length: TOTAL }, (_, i) => ({
   checkedOut: false,
   studentId: null,
   checkoutTime: null,
+  log: [], // per-device activity history
 }));
 
 const activityLog = [];
@@ -176,7 +177,7 @@ function submitAction() {
     cb.checkedOut = true;
     cb.studentId  = studentId;
     cb.checkoutTime = new Date();
-    addLog('checkout', `Chromebook #${cb.id} (${cb.serial}) checked out to Student ${studentId}`);
+    addLog('checkout', `Chromebook #${cb.id} (${cb.serial}) checked out to Student ${studentId}`, cb.id);
 
   } else {
     // checkin — find by student ID
@@ -199,7 +200,7 @@ function submitAction() {
     cb.checkedOut   = false;
     cb.studentId    = null;
     cb.checkoutTime = null;
-    addLog('checkin', `Chromebook #${cb.id} (${cb.serial}) returned by Student ${studentId}`);
+    addLog('checkin', `Chromebook #${cb.id} (${cb.serial}) returned by Student ${studentId}`, cb.id);
   }
 
   renderGrid();
@@ -255,6 +256,7 @@ function openDeviceModal(id) {
   cancelEdit('barcode');
   cancelEdit('serial');
 
+  renderDeviceLog(cb);
   document.getElementById('device-modal').classList.remove('hidden');
 }
 
@@ -294,7 +296,7 @@ function saveField(field) {
   if (field === 'barcode') cb.barcode = val;
   else                     cb.serial  = val;
 
-  addLog('edit', `Chromebook #${cb.id} ${field} changed from "${oldVal}" to "${val}"`);
+  addLog('edit', `Chromebook #${cb.id} ${field} changed from "${oldVal}" to "${val}"`, cb.id);
 
   document.getElementById(`dm-${field}`).textContent = val;
   cancelEdit(field);
@@ -310,10 +312,40 @@ function cancelEdit(field) {
 }
 
 // ── ACTIVITY LOG ──
-function addLog(type, message) {
+function addLog(type, message, cbId) {
   const entry = { type, message, time: new Date() };
   activityLog.unshift(entry);
+  if (cbId != null) {
+    const cb = chromebooks.find(c => c.id === cbId);
+    if (cb) cb.log.unshift({ type, message, time: entry.time });
+  }
   renderLog();
+}
+
+function renderDeviceLog(cb) {
+  const container = document.getElementById('dm-log');
+  const countEl   = document.getElementById('dm-log-count');
+  if (!container) return;
+  countEl.textContent = cb.log.length === 1 ? '1 event' : `${cb.log.length} events`;
+  if (cb.log.length === 0) {
+    container.innerHTML = '<div class="log-empty">No activity for this device yet.</div>';
+    return;
+  }
+  container.innerHTML = cb.log.map(entry => {
+    const typeClass = entry.type === 'checkout' ? 'checkout'
+                    : entry.type === 'checkin'  ? 'checkin'
+                    : 'checkin';
+    const typeLabel = entry.type === 'checkout' ? 'OUT'
+                    : entry.type === 'checkin'  ? 'IN'
+                    : 'EDIT';
+    return `
+      <div class="device-log-entry">
+        <span class="log-time">${formatDateTime(entry.time)}</span>
+        <span class="log-type ${typeClass}">${typeLabel}</span>
+        <span class="log-message">${escapeHtml(entry.message)}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 function renderLog() {
