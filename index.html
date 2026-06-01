@@ -5,13 +5,14 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>Chromebook Checkout</title>
 	<link rel="stylesheet" href="styles.css" />
+	<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 	<div class="page-shell">
 		<header class="hero-panel">
 			<div>
 				<p class="eyebrow"></p>
-				<h1>Chromebook Checkout</h1>
+				<h1>Chromebook Checkout App</h1>
 			</div>
 			<div class="login-section">
 				<button class="secondary-btn" id="loginButton">Login</button>
@@ -95,6 +96,15 @@
 				<input type="password" id="loginPassword" required placeholder="password" />
 				<button type="submit" class="primary-btn">Sign In</button>
 			</form>
+			<div class="login-divider">or</div>
+			<div class="google-signin-wrap">
+				<div id="g_id_onload"
+					 data-client_id="YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
+					 data-callback="handleGoogleSignIn"
+					 data-auto_prompt="false"></div>
+				<div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="signin_with" data-shape="rectangular" data-logo_alignment="left"></div>
+			</div>
+			<p class="google-help-text">Replace the placeholder client ID with your real Google OAuth client ID to enable the button.</p>
 		</div>
 	</div>
 
@@ -238,6 +248,31 @@
 			const available = Math.max(0, TOTAL_DEVICES - checked);
 			document.getElementById('checkedOutCount').textContent = checked;
 			document.getElementById('availableCount').textContent = available;
+		}
+
+		function parseJwt(token) {
+			const base64Url = token.split('.')[1];
+			const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+			const jsonPayload = decodeURIComponent(atob(base64).split('').map(char => `%${(`00${char.charCodeAt(0).toString(16)}`).slice(-2)}`).join(''));
+			return JSON.parse(jsonPayload);
+		}
+
+		function handleGoogleSignIn(response) {
+			try {
+				const profile = parseJwt(response.credential);
+				currentUser = profile.name || profile.email || 'Google User';
+				saveLoggedInUser();
+				loadState();
+				renderGrid();
+				updateCounts();
+				renderActivity();
+				renderLoginStatus();
+				setControlsEnabled(true);
+				closeModal(loginModal);
+			} catch (error) {
+				console.error('Google sign-in failed', error);
+				alert('Google sign-in could not be completed.');
+			}
 		}
 
 		const deviceGrid = document.getElementById('deviceGrid');
@@ -490,7 +525,7 @@
 				addLog(`No Chromebook found for student ${student}`);
 			}
 			saveState();
-			checkinForm.reset();
+			checkinForm.reset();	
 			closeModal(checkinModal);
 			updateCounts();
 			renderGrid();

@@ -148,6 +148,28 @@ h1 {
 	font-size: 0.95rem;
 }
 
+.login-divider {
+	margin: 18px 0 10px;
+	text-align: center;
+	color: #94a3b8;
+	font-size: 0.92rem;
+	text-transform: uppercase;
+	letter-spacing: 0.18em;
+}
+
+.google-signin-wrap {
+	display: grid;
+	gap: 10px;
+	justify-items: center;
+}
+
+.google-help-text {
+	margin: 10px 0 0;
+	color: #cbd5e1;
+	font-size: 0.9rem;
+	text-align: center;
+}
+
 .login-section button:disabled {
 	opacity: 0.6;
 	cursor: not-allowed;
