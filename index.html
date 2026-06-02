@@ -1,90 +1,102 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chromebook Checkout</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@400;700;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
-  <script src="app.js" defer></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <main class="login-overlay" id="login-overlay">
-    <section class="login-box" aria-labelledby="login-title">
-      <div class="login-logo" aria-hidden="true">
-        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-          <rect x="3" y="4" width="18" height="12" rx="2"></rect>
-          <path d="M7 20h10"></path>
-          <path d="M9 16v4"></path>
-          <path d="M15 16v4"></path>
+
+  <!-- LOGIN OVERLAY -->
+  <div id="login-overlay" class="login-overlay">
+    <div class="login-box">
+      <div class="login-logo">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <rect x="4" y="10" width="32" height="20" rx="3" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M12 30 L8 36 M28 30 L32 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M6 36 L34 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="20" cy="20" r="3" fill="currentColor"/>
         </svg>
       </div>
-      <h1 class="login-title" id="login-title">CHROMEBOOK CHECKOUT</h1>
-      <p class="login-subtitle">Sign in to manage device inventory</p>
-
-      <div class="field-group">
-        <label for="login-username">USERNAME</label>
-        <input type="text" id="login-username" autocomplete="username" placeholder="username" />
+      <h2 class="login-title">CHROMEBOOK CHECKOUT</h2>
+      <p class="login-subtitle">Staff Login Required</p>
+      <div class="login-fields">
+        <div id="login-error" class="login-error hidden">Sign-in failed. Please try again.</div>
+        <button class="btn-google-signin" id="google-signin-btn" onclick="doGoogleLogin()">
+          <svg width="20" height="20" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            <path fill="none" d="M0 0h48v48H0z"/>
+          </svg>
+          Sign in with Google
+        </button>
+        <p class="login-hint">Only authorized staff accounts can access this system.</p>
       </div>
-      <div class="field-group">
-        <label for="login-password">PASSWORD</label>
-        <input type="password" id="login-password" autocomplete="current-password" placeholder="password" />
-      </div>
-      <div id="login-error" class="login-error hidden">Invalid username or password.</div>
-      <button class="btn-login" type="button" onclick="doLogin()">SIGN IN</button>
-    </section>
-  </main>
+    </div>
+  </div>
 
-  <div class="app hidden" id="app">
+  <!-- LOADING SCREEN -->
+  <div id="loading-screen" class="loading-screen hidden">
+    <div class="loading-spinner"></div>
+    <p>Loading data...</p>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app" class="app hidden">
+
+    <!-- HEADER -->
     <header class="header">
       <div class="header-left">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <rect x="3" y="4" width="18" height="12" rx="2"></rect>
-          <path d="M7 20h10"></path>
-          <path d="M9 16v4"></path>
-          <path d="M15 16v4"></path>
+        <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+          <rect x="4" y="10" width="32" height="20" rx="3" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M12 30 L8 36 M28 30 L32 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M6 36 L34 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="20" cy="20" r="3" fill="currentColor"/>
         </svg>
         <div>
           <h1 class="app-title">CHROMEBOOK CHECKOUT</h1>
-          <span class="app-sub">PHS DEVICE INVENTORY</span>
+          <span class="app-sub">Device Management System</span>
         </div>
       </div>
       <div class="header-right">
-        <span class="user-badge">
-          <span>USER</span>
-          <strong id="logged-in-user">username</strong>
+        <div class="user-badge">
+          <img id="user-avatar" src="" alt="" class="user-avatar hidden" />
+          <svg id="user-icon-fallback" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          <span id="logged-in-user">Staff</span>
+        </div>
+        <span class="sync-badge" id="sync-badge">
+          <span class="sync-dot" id="sync-dot"></span>
+          <span id="sync-label">Connecting...</span>
         </span>
-        <button class="btn-theme" type="button" onclick="toggleTheme()" aria-label="Toggle theme">
-          <span id="theme-icon">🌙</span>
+        <button class="btn-theme" onclick="toggleTheme()" title="Toggle theme">
+          <span id="theme-icon">☀️</span>
         </button>
-        <button class="btn-logout" type="button" onclick="doLogout()">
-          <span>LOGOUT</span>
+        <button class="btn-logout" onclick="doLogout()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          LOG OUT
         </button>
       </div>
     </header>
 
-    <section class="actions-section" aria-label="Device actions">
-      <button class="action-btn checkout-btn" type="button" onclick="openModal('checkout')">
-        <div class="action-icon" aria-hidden="true">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M5 12h14"></path>
-            <path d="M12 5l7 7-7 7"></path>
-          </svg>
+    <!-- ACTION BUTTONS -->
+    <section class="actions-section">
+      <button class="action-btn checkout-btn" onclick="openModal('checkout')">
+        <div class="action-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </div>
         <div class="action-text">
           <span class="action-label">CHECK OUT</span>
           <span class="action-desc">Assign device to student</span>
         </div>
       </button>
-
-      <button class="action-btn checkin-btn" type="button" onclick="openModal('checkin')">
-        <div class="action-icon" aria-hidden="true">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M19 12H5"></path>
-            <path d="M12 19l-7-7 7-7"></path>
-          </svg>
+      <button class="action-btn checkin-btn" onclick="openModal('checkin')">
+        <div class="action-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         </div>
         <div class="action-text">
           <span class="action-label">CHECK IN</span>
@@ -93,33 +105,29 @@
       </button>
     </section>
 
-    <section class="stats-section" aria-label="Inventory stats">
+    <!-- STATS CARDS -->
+    <section class="stats-section">
       <div class="stat-card available-card">
-        <div class="stat-icon" aria-hidden="true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <path d="M22 4 12 14.01l-3-3"></path>
-          </svg>
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
         </div>
         <div class="stat-info">
-          <span class="stat-number" id="available-count">32</span>
+          <span class="stat-number" id="available-count">—</span>
           <span class="stat-label">AVAILABLE</span>
         </div>
       </div>
       <div class="stat-card checkedout-card">
-        <div class="stat-icon" aria-hidden="true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M12 6v6l4 2"></path>
-          </svg>
+        <div class="stat-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
         <div class="stat-info">
-          <span class="stat-number" id="checkedout-count">0</span>
+          <span class="stat-number" id="checkedout-count">—</span>
           <span class="stat-label">CHECKED OUT</span>
         </div>
       </div>
     </section>
 
+    <!-- CHROMEBOOK GRID -->
     <section class="grid-section">
       <div class="section-header">
         <h2 class="section-title">DEVICE INVENTORY</h2>
@@ -128,114 +136,109 @@
       <div class="chromebook-grid" id="chromebook-grid"></div>
     </section>
 
+    <!-- ACTIVITY LOG -->
     <section class="log-section">
       <div class="section-header">
         <h2 class="section-title">ACTIVITY LOG</h2>
-        <button class="btn-clear-log" type="button" onclick="clearLog()">CLEAR LOG</button>
+        <button class="btn-clear-log" onclick="clearLog()">CLEAR LOG</button>
       </div>
       <div class="log-container" id="activity-log">
         <div class="log-empty">No activity recorded yet.</div>
       </div>
     </section>
+
   </div>
 
+  <!-- CHECKOUT / CHECKIN MODAL -->
   <div id="action-modal" class="modal-overlay hidden">
-    <section class="modal-box" aria-labelledby="modal-title">
-      <button class="modal-close" type="button" onclick="closeModal('action-modal')" aria-label="Close">X</button>
-      <h2 class="modal-title" id="modal-title">CHECK OUT</h2>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeModal('action-modal')">✕</button>
+      <h3 class="modal-title" id="modal-title">CHECK OUT</h3>
       <p class="modal-desc" id="modal-desc">Assign a Chromebook to a student.</p>
-
       <div id="checkout-fields">
         <div class="field-group">
           <label>CHROMEBOOK SERIAL #</label>
-          <input type="text" id="co-serial" placeholder="" autocomplete="off"/>
+          <input type="text" id="co-serial" placeholder="e.g. CB-000001" autocomplete="off"/>
         </div>
         <div class="field-group">
           <label>STUDENT ID</label>
-          <input type="text" id="co-student" placeholder="" autocomplete="off"/>
+          <input type="text" id="co-student" placeholder="e.g. S12345" autocomplete="off"/>
         </div>
       </div>
-
       <div id="checkin-fields" class="hidden">
         <div class="field-group">
-          <label for="ci-student">STUDENT ID</label>
-          <input type="text" id="ci-student" placeholder="" autocomplete="off" />
+          <label>STUDENT ID</label>
+          <input type="text" id="ci-student" placeholder="e.g. S12345" autocomplete="off"/>
         </div>
       </div>
-
       <div id="modal-error" class="login-error hidden"></div>
-      <button class="btn-submit" id="modal-submit-btn" type="button" onclick="submitAction()">SUBMIT</button>
-    </section>
+      <button class="btn-submit" id="modal-submit-btn" onclick="submitAction()">SUBMIT</button>
+    </div>
   </div>
 
+  <!-- DEVICE DETAIL MODAL -->
   <div id="device-modal" class="modal-overlay hidden">
-    <section class="modal-box device-modal-box" aria-labelledby="dm-title">
-      <button class="modal-close" type="button" onclick="closeModal('device-modal')" aria-label="Close">X</button>
+    <div class="modal-box device-modal-box">
+      <button class="modal-close" onclick="closeModal('device-modal')">✕</button>
       <div class="device-modal-header">
         <div class="device-number-badge" id="dm-number">01</div>
         <div>
-          <h2 class="modal-title" id="dm-title">CHROMEBOOK #1</h2>
-          <span class="status-pill available" id="dm-status-pill">AVAILABLE</span>
+          <h3 class="modal-title" id="dm-title">CHROMEBOOK #1</h3>
+          <span class="status-pill" id="dm-status-pill">AVAILABLE</span>
         </div>
       </div>
-
       <div class="device-detail-grid">
         <div class="detail-row">
           <span class="detail-label">BARCODE</span>
           <div class="detail-value-row">
-            <span class="detail-value" id="dm-barcode"></span>
-            <button class="edit-icon-btn" id="dm-barcode-edit-btn" type="button" onclick="editField('barcode')" aria-label="Edit barcode">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M12 20h9"></path>
-                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-              </svg>
+            <span class="detail-value mono" id="dm-barcode">—</span>
+            <button class="edit-icon-btn" id="dm-barcode-edit-btn" onclick="editField('barcode')" title="Edit barcode">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
             <div class="inline-edit hidden" id="dm-barcode-edit">
-              <input id="dm-barcode-input" type="text" />
-              <button type="button" onclick="saveField('barcode')">Save</button>
-              <button type="button" onclick="cancelEdit('barcode')">Cancel</button>
+              <input type="text" id="dm-barcode-input" />
+              <button onclick="saveField('barcode')">✓</button>
+              <button onclick="cancelEdit('barcode')">✕</button>
             </div>
           </div>
         </div>
-
         <div class="detail-row">
-          <span class="detail-label">SERIAL</span>
+          <span class="detail-label">SERIAL NUMBER</span>
           <div class="detail-value-row">
-            <span class="detail-value" id="dm-serial"></span>
-            <button class="edit-icon-btn" id="dm-serial-edit-btn" type="button" onclick="editField('serial')" aria-label="Edit serial">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M12 20h9"></path>
-                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-              </svg>
+            <span class="detail-value mono" id="dm-serial">—</span>
+            <button class="edit-icon-btn" id="dm-serial-edit-btn" onclick="editField('serial')" title="Edit serial">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
             <div class="inline-edit hidden" id="dm-serial-edit">
-              <input id="dm-serial-input" type="text" />
-              <button type="button" onclick="saveField('serial')">Save</button>
-              <button type="button" onclick="cancelEdit('serial')">Cancel</button>
+              <input type="text" id="dm-serial-input" />
+              <button onclick="saveField('serial')">✓</button>
+              <button onclick="cancelEdit('serial')">✕</button>
             </div>
           </div>
         </div>
-
         <div class="detail-row" id="dm-student-row">
-          <span class="detail-label">STUDENT</span>
-          <span class="detail-value" id="dm-student"></span>
+          <span class="detail-label">CHECKED OUT BY</span>
+          <span class="detail-value mono" id="dm-student">—</span>
         </div>
         <div class="detail-row" id="dm-time-row">
           <span class="detail-label">CHECKOUT TIME</span>
-          <span class="detail-value" id="dm-time"></span>
+          <span class="detail-value mono" id="dm-time">—</span>
         </div>
       </div>
-
+      <!-- PER-DEVICE ACTIVITY LOG -->
       <div class="device-log-section">
         <div class="device-log-header">
-          <h3 class="device-log-title">DEVICE ACTIVITY</h3>
+          <span class="device-log-title">DEVICE HISTORY</span>
           <span class="device-log-count" id="dm-log-count">0 events</span>
         </div>
         <div class="device-log-container" id="dm-log">
           <div class="log-empty">No activity for this device yet.</div>
         </div>
       </div>
-    </section>
+    </div>
   </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module" src="app.js"></script>
 </body>
 </html>
