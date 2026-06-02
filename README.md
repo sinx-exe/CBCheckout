@@ -16,11 +16,13 @@ Then open:
 http://localhost:3000
 ```
 
-To use it from another device on the same Wi-Fi network, open the host computer's local IP address from the phone/tablet:
+To use it from another device on the same Wi-Fi network, do not use `localhost` on that device. Open the host computer's local IP address from every phone/tablet/laptop:
 
 ```text
 http://YOUR-COMPUTER-IP:3000
 ```
+
+All devices must use the same backend address. If one device opens GitHub Pages or a local file while another opens the Node server, they will not share data.
 
 On macOS, you can usually find that IP in System Settings > Wi-Fi > Details, or with:
 
@@ -37,6 +39,20 @@ data/db.json
 ```
 
 That file is intentionally ignored by Git because it is live runtime data.
+
+## If Frontend and Backend Are Separate
+
+The easiest setup is to serve the app from `npm start`. If you host the frontend somewhere else, point it at the backend with the `api` query parameter:
+
+```text
+http://your-frontend.example.com/?api=http://YOUR-COMPUTER-IP:3000
+```
+
+The app remembers that backend URL in the browser after the first visit.
+
+If the frontend is served over HTTPS, the backend URL must also be HTTPS or the browser will block the connection.
+
+If the header says `SYNC OFFLINE`, checkout changes are blocked because that device is not connected to the shared backend.
 
 ## Notes
 
