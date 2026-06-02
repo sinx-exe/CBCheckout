@@ -5,7 +5,7 @@
 const TOTAL = 32;
 const CREDS = { username: "username", password: "password" };
 const STORAGE_KEY = 'cbcheckout-state-v1';
-const API_BASE = '';
+const API_BASE = getApiBase();
 
 // ── STATE ──
 let isLoggedIn = false;
@@ -33,6 +33,18 @@ function createDefaultChromebooks() {
     checkoutTime: null,
     log: [],
   }));
+}
+
+function getApiBase() {
+  const params = new URLSearchParams(window.location.search);
+  const apiFromUrl = params.get('api');
+  if (apiFromUrl) {
+    const normalized = apiFromUrl.replace(/\/$/, '');
+    localStorage.setItem('cbcheckout-api-base', normalized);
+    return normalized;
+  }
+
+  return (localStorage.getItem('cbcheckout-api-base') || '').replace(/\/$/, '');
 }
 
 // ── INIT ──
@@ -174,29 +186,11 @@ async function submitAction() {
         return;
       }
 
-      if (backendConnected) {
-        const nextState = await apiRequest('/api/checkout', {
-          method: 'POST',
-          body: { deviceCode, studentId },
-        });
-        applyState(nextState, { persist: true });
-      } else {
-        const cb = findChromebookByDeviceCode(deviceCode);
-
-        if (!cb) {
-          showModalError(`No Chromebook found with barcode or serial "${deviceCode}".`);
-          return;
-        }
-        if (cb.checkedOut) {
-          showModalError(`Chromebook #${cb.id} is already checked out.`);
-          return;
-        }
-
-        cb.checkedOut   = true;
-        cb.studentId    = studentId;
-        cb.checkoutTime = new Date();
-        addLog('checkout', `#${cb.id} (${cb.barcode} / ${cb.serial}) checked out to Student ${studentId}`, cb.id);
-      }
+      const nextState = await apiRequest('/api/checkout', {
+        method: 'POST',
+        body: { deviceCode, studentId },
+      });
+      applyState(nextState, { persist: true });
 
     } else {
       const studentId = document.getElementById('ci-student').value.trim();
@@ -206,34 +200,18 @@ async function submitAction() {
         return;
       }
 
-      if (backendConnected) {
-        const nextState = await apiRequest('/api/checkin', {
-          method: 'POST',
-          body: { studentId },
-        });
-        applyState(nextState, { persist: true });
-      } else {
-        const cb = chromebooks.find(c =>
-          c.checkedOut && c.studentId && c.studentId.toLowerCase() === studentId.toLowerCase()
-        );
-
-        if (!cb) {
-          showModalError(`No Chromebook found checked out to Student ID "${studentId}".`);
-          return;
-        }
-
-        const prevStudent = cb.studentId;
-        cb.checkedOut   = false;
-        cb.studentId    = null;
-        cb.checkoutTime = null;
-        addLog('checkin', `#${cb.id} (${cb.serial}) returned by Student ${prevStudent}`, cb.id);
-      }
+      const nextState = await apiRequest('/api/checkin', {
+        method: 'POST',
+        body: { studentId },
+      });
+      applyState(nextState, { persist: true });
     }
 
     renderGrid();
     updateStats();
     closeModal('action-modal');
   } catch (err) {
+    setBackendStatus(false);
     showModalError(err.message || 'Unable to update checkout data.');
   } finally {
     submitBtn.disabled = false;
@@ -451,19 +429,11 @@ async function saveField(field) {
   if (!val) return;
 
   try {
-    if (backendConnected) {
-      const nextState = await apiRequest(`/api/devices/${cb.id}`, {
-        method: 'PATCH',
-        body: { field, value: val },
-      });
-      applyState(nextState, { persist: true });
-    } else {
-      const oldVal = field === 'barcode' ? cb.barcode : cb.serial;
-      if (field === 'barcode') cb.barcode = val;
-      else                     cb.serial  = val;
-
-      addLog('edit', `#${cb.id} ${field} changed: "${oldVal}" -> "${val}"`, cb.id);
-    }
+    const nextState = await apiRequest(`/api/devices/${cb.id}`, {
+      method: 'PATCH',
+      body: { field, value: val },
+    });
+    applyState(nextState, { persist: true });
 
     const updatedCb = chromebooks.find(c => c.id === openDeviceIndex);
     document.getElementById(`dm-${field}`).textContent = updatedCb ? updatedCb[field] : val;
@@ -471,6 +441,7 @@ async function saveField(field) {
 
     if (updatedCb) renderDeviceLog(updatedCb);
   } catch (err) {
+    setBackendStatus(false);
     showModalError(err.message || `Unable to save ${field}.`);
   }
 }
@@ -553,34 +524,25 @@ function renderLog() {
 
 async function clearLog() {
   if (!isLoggedIn) return;
-  if (backendConnected) {
-    try {
-      const nextState = await apiRequest('/api/log/clear', { method: 'POST' });
-      applyState(nextState, { persist: true });
-      return;
-    } catch (err) {
-      console.warn(err);
-    }
+  try {
+    const nextState = await apiRequest('/api/log/clear', { method: 'POST' });
+    applyState(nextState, { persist: true });
+  } catch (err) {
+    setBackendStatus(false);
+    console.warn(err);
   }
-
-  activityLog.length = 0;
-  chromebooks.forEach(cb => {
-    cb.log = [];
-  });
-  renderLog();
-  persistState();
 }
 
 // ── HELPERS ──
 async function connectBackend() {
   try {
     const nextState = await apiRequest('/api/state');
-    backendConnected = true;
+    setBackendStatus(true);
     applyState(nextState, { persist: true });
     connectStateEvents();
   } catch (err) {
-    backendConnected = false;
-    console.warn('Using local-only fallback state:', err.message);
+    setBackendStatus(false);
+    console.warn('Backend unavailable; showing cached state only:', err.message);
   }
 }
 
@@ -589,7 +551,7 @@ function connectStateEvents() {
 
   stateEvents = new EventSource(`${API_BASE}/api/events`);
   stateEvents.addEventListener('state', e => {
-    backendConnected = true;
+    setBackendStatus(true);
     applyState(JSON.parse(e.data), { persist: true });
   });
   stateEvents.onerror = () => {
@@ -611,8 +573,21 @@ async function apiRequest(path, options = {}) {
 
   const res = await fetch(`${API_BASE}${path}`, fetchOptions);
   const data = await res.json().catch(() => ({}));
+  setBackendStatus(true);
   if (!res.ok) throw new Error(data.error || `Request failed with status ${res.status}.`);
   return data;
+}
+
+function setBackendStatus(isConnected) {
+  backendConnected = isConnected;
+  const status = document.getElementById('sync-status');
+  if (!status) return;
+
+  status.textContent = isConnected ? 'LIVE SYNC' : 'SYNC OFFLINE';
+  status.className = `sync-badge ${isConnected ? 'online' : 'offline'}`;
+  status.title = isConnected
+    ? 'Connected to the shared checkout database.'
+    : 'Not connected to the backend. Checkout changes are disabled until this reconnects.';
 }
 
 function applyState(nextState, options = {}) {

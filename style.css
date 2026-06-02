@@ -253,6 +253,32 @@ input {
   letter-spacing: 0.05em;
 }
 
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  border-radius: 20px;
+  padding: 6px 10px;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.sync-badge.online {
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+  color: var(--green);
+}
+
+.sync-badge.offline {
+  background: var(--red-dim);
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+
 .btn-theme {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -897,20 +923,28 @@ input {
   .header-right {
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr 44px auto;
+    grid-template-columns: 1fr 1fr 44px auto;
     gap: 8px;
   }
 
   .user-badge,
+  .sync-badge,
   .btn-theme,
   .btn-logout {
     min-height: 42px;
   }
 
-  .user-badge {
+  .user-badge,
+  .sync-badge {
     min-width: 0;
     justify-content: center;
     border-radius: var(--radius-sm);
+  }
+
+  .sync-badge {
+    padding: 6px 8px;
+    font-size: 0.58rem;
+    letter-spacing: 0.04em;
   }
 
   .btn-theme {
@@ -1203,5 +1237,14 @@ input {
 
   .action-label {
     font-size: 0.7rem;
+  }
+
+  .header-right {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .btn-theme,
+  .btn-logout {
+    width: 100%;
   }
 }

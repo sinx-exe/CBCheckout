@@ -69,8 +69,17 @@ function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
+    ...corsHeaders(),
   });
   res.end(JSON.stringify(data));
+}
+
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept',
+    'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
+  };
 }
 
 function sendError(res, statusCode, message) {
@@ -142,6 +151,7 @@ async function handleApi(req, res, url) {
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
+      ...corsHeaders(),
     });
     res.write(`event: state\ndata: ${JSON.stringify(state)}\n\n`);
     clients.add(res);
@@ -296,6 +306,12 @@ const requestHandler = async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   try {
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, corsHeaders());
+      res.end();
+      return;
+    }
+
     if (url.pathname.startsWith('/api/')) {
       await handleApi(req, res, url);
       return;
