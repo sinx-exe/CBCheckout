@@ -2,7 +2,7 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Chromebook Checkout</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,7 +26,7 @@
 
       <div class="field-group">
         <label for="login-username">USERNAME</label>
-        <input type="text" id="login-username" autocomplete="username" placeholder="username" />
+        <input type="text" id="login-username" autocomplete="username" placeholder="username" autocapitalize="none" />
       </div>
       <div class="field-group">
         <label for="login-password">PASSWORD</label>
@@ -56,6 +56,7 @@
           <span>USER</span>
           <strong id="logged-in-user">username</strong>
         </span>
+        <span class="sync-badge offline" id="sync-status">SYNC OFFLINE</span>
         <button class="btn-theme" type="button" onclick="toggleTheme()" aria-label="Toggle theme">
           <span id="theme-icon">🌙</span>
         </button>
@@ -147,19 +148,37 @@
 
       <div id="checkout-fields">
         <div class="field-group">
-          <label>CHROMEBOOK SERIAL #</label>
-          <input type="text" id="co-serial" placeholder="" autocomplete="off"/>
+          <label for="co-serial">CHROMEBOOK BARCODE OR SERIAL #</label>
+          <div class="scan-input-row">
+            <input type="text" id="co-serial" placeholder="" autocomplete="off" autocapitalize="characters" inputmode="text" />
+            <button class="btn-scan" type="button" onclick="openScanner('co-serial', 'Chromebook barcode')">
+              <span aria-hidden="true">▦</span>
+              <span>SCAN</span>
+            </button>
+          </div>
         </div>
         <div class="field-group">
-          <label>STUDENT ID</label>
-          <input type="text" id="co-student" placeholder="" autocomplete="off"/>
+          <label for="co-student">STUDENT ID</label>
+          <div class="scan-input-row">
+            <input type="text" id="co-student" placeholder="" autocomplete="off" autocapitalize="none" inputmode="numeric" />
+            <button class="btn-scan" type="button" onclick="openScanner('co-student', 'Student ID')">
+              <span aria-hidden="true">▦</span>
+              <span>SCAN</span>
+            </button>
+          </div>
         </div>
       </div>
 
       <div id="checkin-fields" class="hidden">
         <div class="field-group">
           <label for="ci-student">STUDENT ID</label>
-          <input type="text" id="ci-student" placeholder="" autocomplete="off" />
+          <div class="scan-input-row">
+            <input type="text" id="ci-student" placeholder="" autocomplete="off" autocapitalize="none" inputmode="numeric" />
+            <button class="btn-scan" type="button" onclick="openScanner('ci-student', 'Student ID')">
+              <span aria-hidden="true">▦</span>
+              <span>SCAN</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -191,7 +210,8 @@
               </svg>
             </button>
             <div class="inline-edit hidden" id="dm-barcode-edit">
-              <input id="dm-barcode-input" type="text" />
+              <input id="dm-barcode-input" type="text" autocapitalize="characters" inputmode="text" />
+              <button type="button" onclick="openScanner('dm-barcode-input', 'Chromebook barcode')">Scan</button>
               <button type="button" onclick="saveField('barcode')">Save</button>
               <button type="button" onclick="cancelEdit('barcode')">Cancel</button>
             </div>
@@ -209,7 +229,7 @@
               </svg>
             </button>
             <div class="inline-edit hidden" id="dm-serial-edit">
-              <input id="dm-serial-input" type="text" />
+              <input id="dm-serial-input" type="text" autocapitalize="characters" inputmode="text" />
               <button type="button" onclick="saveField('serial')">Save</button>
               <button type="button" onclick="cancelEdit('serial')">Cancel</button>
             </div>
@@ -235,6 +255,20 @@
           <div class="log-empty">No activity for this device yet.</div>
         </div>
       </div>
+    </section>
+  </div>
+
+  <div id="scanner-modal" class="modal-overlay scanner-overlay hidden">
+    <section class="modal-box scanner-box" aria-labelledby="scanner-title">
+      <button class="modal-close" type="button" onclick="closeScanner()" aria-label="Close scanner">X</button>
+      <h2 class="modal-title" id="scanner-title">SCAN BARCODE</h2>
+      <p class="modal-desc" id="scanner-desc">Point the camera at the barcode.</p>
+      <div class="scanner-frame">
+        <video id="scanner-video" playsinline muted></video>
+        <div class="scanner-reticle" aria-hidden="true"></div>
+      </div>
+      <div class="scanner-status" id="scanner-status">Starting camera...</div>
+      <button class="btn-submit scanner-cancel" type="button" onclick="closeScanner()">CANCEL SCAN</button>
     </section>
   </div>
 </body>
