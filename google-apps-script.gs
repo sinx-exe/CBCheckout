@@ -1,0 +1,332 @@
+/*
+  Chromebook Checkout - Google Apps Script Backend
+
+  How this works:
+  - Deploy this file as a Google Apps Script Web App.
+  - The frontend on GitHub Pages calls this Web App URL with fetch().
+  - One Google Sheets spreadsheet stores all shared checkout data.
+
+  Spreadsheet tabs created/used by this script:
+  1. Devices
+     ID | Barcode | Serial | CheckedOut | StudentID | CheckoutTime | UpdatedAt
+  2. ActivityLog
+     Timestamp | Type | DeviceID | Message
+*/
+
+const TOTAL_DEVICES = 32;
+
+// If this script is bound to the Google Sheet, leave this blank.
+// If this is a standalone Apps Script project, paste your Sheet ID here.
+const SPREADSHEET_ID = '';
+
+const DEVICES_SHEET = 'Devices';
+const LOG_SHEET = 'ActivityLog';
+
+function doGet(e) {
+  try {
+    setupSpreadsheet_();
+
+    const params = e && e.parameter ? e.parameter : {};
+    const action = (params.action || 'state').toLowerCase();
+    if (action === 'state') {
+      return json_({ ok: true, state: getState_() });
+    }
+
+    if (action === 'setup') {
+      return json_({
+        ok: true,
+        message: 'Spreadsheet setup complete.',
+        state: getState_(),
+      });
+    }
+
+    return json_({ ok: false, error: 'Unknown GET action.' });
+  } catch (err) {
+    return json_({ ok: false, error: err.message });
+  }
+}
+
+// Run this from the Apps Script editor once to create the Sheet tabs,
+// headers, and default Chromebook rows.
+function setupSpreadsheet() {
+  setupSpreadsheet_();
+}
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+
+  try {
+    setupSpreadsheet_();
+    const body = parseBody_(e);
+    const action = body.action;
+
+    if (action === 'checkout') {
+      checkout_(body.deviceCode, body.studentId);
+    } else if (action === 'checkin') {
+      checkin_(body.studentId);
+    } else if (action === 'updateDevice') {
+      updateDevice_(body.id, body.field, body.value);
+    } else if (action === 'clearLog') {
+      clearLog_();
+    } else {
+      throw new Error('Unknown POST action.');
+    }
+
+    return json_({ ok: true, state: getState_() });
+  } catch (err) {
+    return json_({ ok: false, error: err.message });
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function parseBody_(e) {
+  if (!e.postData || !e.postData.contents) return {};
+  return JSON.parse(e.postData.contents);
+}
+
+function checkout_(deviceCode, studentId) {
+  const cleanDeviceCode = String(deviceCode || '').trim();
+  const cleanStudentId = String(studentId || '').trim();
+
+  if (!cleanDeviceCode || !cleanStudentId) {
+    throw new Error('Please fill in both Chromebook barcode/serial and Student ID.');
+  }
+
+  const match = findDeviceByCode_(cleanDeviceCode);
+  if (!match) {
+    throw new Error(`No Chromebook found with barcode or serial "${cleanDeviceCode}".`);
+  }
+
+  const device = match.device;
+  if (toBoolean_(device.CheckedOut)) {
+    throw new Error(`Chromebook #${device.ID} is already checked out.`);
+  }
+
+  const now = new Date();
+  updateDeviceRow_(match.rowNumber, {
+    CheckedOut: true,
+    StudentID: cleanStudentId,
+    CheckoutTime: now,
+    UpdatedAt: now,
+  });
+
+  addLog_(
+    'checkout',
+    device.ID,
+    `#${device.ID} (${device.Barcode} / ${device.Serial}) checked out to Student ${cleanStudentId}`
+  );
+}
+
+function checkin_(studentId) {
+  const cleanStudentId = String(studentId || '').trim();
+  if (!cleanStudentId) throw new Error('Please enter a Student ID.');
+
+  const devices = getDeviceRows_();
+  const match = devices.find(item =>
+    toBoolean_(item.device.CheckedOut) &&
+    String(item.device.StudentID || '').toLowerCase() === cleanStudentId.toLowerCase()
+  );
+
+  if (!match) {
+    throw new Error(`No Chromebook found checked out to Student ID "${cleanStudentId}".`);
+  }
+
+  const device = match.device;
+  const now = new Date();
+  updateDeviceRow_(match.rowNumber, {
+    CheckedOut: false,
+    StudentID: '',
+    CheckoutTime: '',
+    UpdatedAt: now,
+  });
+
+  addLog_('checkin', device.ID, `#${device.ID} (${device.Serial}) returned by Student ${cleanStudentId}`);
+}
+
+function updateDevice_(id, field, value) {
+  const cleanId = Number(id);
+  const cleanField = String(field || '').trim();
+  const cleanValue = String(value || '').trim();
+
+  if (!cleanId) throw new Error('Missing Chromebook ID.');
+  if (!['barcode', 'serial'].includes(cleanField)) {
+    throw new Error('Only barcode and serial can be edited.');
+  }
+  if (!cleanValue) throw new Error('Please enter a value.');
+
+  const columnName = cleanField === 'barcode' ? 'Barcode' : 'Serial';
+  const devices = getDeviceRows_();
+  const match = devices.find(item => Number(item.device.ID) === cleanId);
+  if (!match) throw new Error('Chromebook not found.');
+
+  const duplicate = devices.find(item =>
+    Number(item.device.ID) !== cleanId &&
+    String(item.device[columnName] || '').toLowerCase() === cleanValue.toLowerCase()
+  );
+  if (duplicate) {
+    throw new Error(`Chromebook #${duplicate.device.ID} already uses that ${cleanField}.`);
+  }
+
+  const oldValue = match.device[columnName];
+  updateDeviceRow_(match.rowNumber, {
+    [columnName]: cleanValue,
+    UpdatedAt: new Date(),
+  });
+
+  addLog_('edit', cleanId, `#${cleanId} ${cleanField} changed: "${oldValue}" -> "${cleanValue}"`);
+}
+
+function clearLog_() {
+  const sheet = getSheet_(LOG_SHEET);
+  sheet.clear();
+  sheet.appendRow(['Timestamp', 'Type', 'DeviceID', 'Message']);
+}
+
+function getState_() {
+  const logs = getLogs_();
+  const chromebooks = getDeviceRows_().map(item => {
+    const device = item.device;
+    const id = Number(device.ID);
+
+    return {
+      id,
+      barcode: String(device.Barcode || ''),
+      serial: String(device.Serial || ''),
+      checkedOut: toBoolean_(device.CheckedOut),
+      studentId: device.StudentID ? String(device.StudentID) : null,
+      checkoutTime: device.CheckoutTime ? new Date(device.CheckoutTime).toISOString() : null,
+      log: logs
+        .filter(entry => Number(entry.DeviceID) === id)
+        .map(logToFrontend_),
+    };
+  });
+
+  return {
+    chromebooks,
+    activityLog: logs.map(logToFrontend_),
+  };
+}
+
+function setupSpreadsheet_() {
+  const devices = getSheet_(DEVICES_SHEET);
+  const logs = getSheet_(LOG_SHEET);
+
+  ensureHeaders_(devices, ['ID', 'Barcode', 'Serial', 'CheckedOut', 'StudentID', 'CheckoutTime', 'UpdatedAt']);
+  ensureHeaders_(logs, ['Timestamp', 'Type', 'DeviceID', 'Message']);
+
+  if (devices.getLastRow() < 2) {
+    const now = new Date();
+    const rows = [];
+    for (let i = 1; i <= TOTAL_DEVICES; i += 1) {
+      rows.push([
+        i,
+        `BC-${String(i).padStart(6, '0')}`,
+        `CB-${String(i).padStart(6, '0')}`,
+        false,
+        '',
+        '',
+        now,
+      ]);
+    }
+    devices.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+  }
+}
+
+function getSpreadsheet_() {
+  if (SPREADSHEET_ID) return SpreadsheetApp.openById(SPREADSHEET_ID);
+
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  if (!spreadsheet) {
+    throw new Error('No active spreadsheet. Bind this script to a Sheet or set SPREADSHEET_ID.');
+  }
+  return spreadsheet;
+}
+
+function getSheet_(name) {
+  const spreadsheet = getSpreadsheet_();
+  return spreadsheet.getSheetByName(name) || spreadsheet.insertSheet(name);
+}
+
+function ensureHeaders_(sheet, headers) {
+  const existing = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+  const needsHeaders = headers.some((header, index) => existing[index] !== header);
+  if (needsHeaders) {
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  }
+}
+
+function getDeviceRows_() {
+  const sheet = getSheet_(DEVICES_SHEET);
+  const values = sheet.getDataRange().getValues();
+  const headers = values.shift();
+
+  return values
+    .filter(row => row[0] !== '')
+    .map((row, index) => ({
+      rowNumber: index + 2,
+      device: rowToObject_(headers, row),
+    }));
+}
+
+function getLogs_() {
+  const sheet = getSheet_(LOG_SHEET);
+  const values = sheet.getDataRange().getValues();
+  const headers = values.shift();
+
+  return values
+    .filter(row => row[0] !== '')
+    .map(row => rowToObject_(headers, row))
+    .sort((a, b) => new Date(b.Timestamp).getTime() - new Date(a.Timestamp).getTime());
+}
+
+function findDeviceByCode_(code) {
+  const normalized = String(code || '').trim().toLowerCase();
+  return getDeviceRows_().find(item =>
+    String(item.device.Barcode || '').toLowerCase() === normalized ||
+    String(item.device.Serial || '').toLowerCase() === normalized
+  );
+}
+
+function updateDeviceRow_(rowNumber, changes) {
+  const sheet = getSheet_(DEVICES_SHEET);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+  Object.keys(changes).forEach(key => {
+    const columnIndex = headers.indexOf(key) + 1;
+    if (columnIndex > 0) {
+      sheet.getRange(rowNumber, columnIndex).setValue(changes[key]);
+    }
+  });
+}
+
+function addLog_(type, deviceId, message) {
+  getSheet_(LOG_SHEET).appendRow([new Date(), type, deviceId, message]);
+}
+
+function rowToObject_(headers, row) {
+  const obj = {};
+  headers.forEach((header, index) => {
+    obj[header] = row[index];
+  });
+  return obj;
+}
+
+function logToFrontend_(entry) {
+  return {
+    type: String(entry.Type || ''),
+    message: String(entry.Message || ''),
+    time: entry.Timestamp ? new Date(entry.Timestamp).toISOString() : new Date().toISOString(),
+  };
+}
+
+function toBoolean_(value) {
+  return value === true || String(value).toLowerCase() === 'true';
+}
+
+function json_(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}

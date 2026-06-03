@@ -5,7 +5,13 @@
 const TOTAL = 32;
 const CREDS = { username: "username", password: "password" };
 const STORAGE_KEY = 'cbcheckout-state-v1';
-const API_BASE = getApiBase();
+
+// Paste your deployed Google Apps Script Web App URL here.
+// It should look like:
+// https://script.google.com/macros/s/AKfycb.../exec
+const GOOGLE_SCRIPT_URL = '';
+
+const SYNC_INTERVAL_MS = 10000;
 
 // ── STATE ──
 let isLoggedIn = false;
@@ -16,8 +22,8 @@ let scannerDetector = null;
 let scannerTargetInputId = null;
 let scannerAnimationId = null;
 let scannerActive = false;
-let backendConnected = false;
-let stateEvents = null;
+let sheetConnected = false;
+let syncTimer = null;
 
 const initialState = loadSavedState();
 const chromebooks = initialState.chromebooks;
@@ -35,24 +41,12 @@ function createDefaultChromebooks() {
   }));
 }
 
-function getApiBase() {
-  const params = new URLSearchParams(window.location.search);
-  const apiFromUrl = params.get('api');
-  if (apiFromUrl) {
-    const normalized = apiFromUrl.replace(/\/$/, '');
-    localStorage.setItem('cbcheckout-api-base', normalized);
-    return normalized;
-  }
-
-  return (localStorage.getItem('cbcheckout-api-base') || '').replace(/\/$/, '');
-}
-
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
   renderGrid();
   updateStats();
   renderLog();
-  connectBackend();
+  connectSheet();
 
   ['login-username', 'login-password'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => {
@@ -186,10 +180,7 @@ async function submitAction() {
         return;
       }
 
-      const nextState = await apiRequest('/api/checkout', {
-        method: 'POST',
-        body: { deviceCode, studentId },
-      });
+      const nextState = await scriptRequest('checkout', { deviceCode, studentId });
       applyState(nextState, { persist: true });
 
     } else {
@@ -200,10 +191,7 @@ async function submitAction() {
         return;
       }
 
-      const nextState = await apiRequest('/api/checkin', {
-        method: 'POST',
-        body: { studentId },
-      });
+      const nextState = await scriptRequest('checkin', { studentId });
       applyState(nextState, { persist: true });
     }
 
@@ -211,7 +199,7 @@ async function submitAction() {
     updateStats();
     closeModal('action-modal');
   } catch (err) {
-    setBackendStatus(false);
+    setSyncStatus(false);
     showModalError(err.message || 'Unable to update checkout data.');
   } finally {
     submitBtn.disabled = false;
@@ -429,9 +417,10 @@ async function saveField(field) {
   if (!val) return;
 
   try {
-    const nextState = await apiRequest(`/api/devices/${cb.id}`, {
-      method: 'PATCH',
-      body: { field, value: val },
+    const nextState = await scriptRequest('updateDevice', {
+      id: cb.id,
+      field,
+      value: val,
     });
     applyState(nextState, { persist: true });
 
@@ -441,7 +430,7 @@ async function saveField(field) {
 
     if (updatedCb) renderDeviceLog(updatedCb);
   } catch (err) {
-    setBackendStatus(false);
+    setSyncStatus(false);
     showModalError(err.message || `Unable to save ${field}.`);
   }
 }
@@ -525,72 +514,99 @@ function renderLog() {
 async function clearLog() {
   if (!isLoggedIn) return;
   try {
-    const nextState = await apiRequest('/api/log/clear', { method: 'POST' });
+    const nextState = await scriptRequest('clearLog');
     applyState(nextState, { persist: true });
   } catch (err) {
-    setBackendStatus(false);
+    setSyncStatus(false);
     console.warn(err);
   }
 }
 
 // ── HELPERS ──
-async function connectBackend() {
+async function connectSheet() {
   try {
-    const nextState = await apiRequest('/api/state');
-    setBackendStatus(true);
+    const nextState = await getStateFromSheet();
+    setSyncStatus(true);
     applyState(nextState, { persist: true });
-    connectStateEvents();
+    startPollingSheet();
   } catch (err) {
-    setBackendStatus(false);
-    console.warn('Backend unavailable; showing cached state only:', err.message);
+    setSyncStatus(false);
+    console.warn('Google Sheet unavailable; showing cached state only:', err.message);
   }
 }
 
-function connectStateEvents() {
-  if (!window.EventSource || stateEvents) return;
+function startPollingSheet() {
+  if (syncTimer) return;
 
-  stateEvents = new EventSource(`${API_BASE}/api/events`);
-  stateEvents.addEventListener('state', e => {
-    setBackendStatus(true);
-    applyState(JSON.parse(e.data), { persist: true });
+  syncTimer = window.setInterval(async () => {
+    try {
+      const nextState = await getStateFromSheet();
+      setSyncStatus(true);
+      applyState(nextState, { persist: true });
+    } catch (err) {
+      setSyncStatus(false);
+      console.warn('Sheet sync failed:', err.message);
+    }
+  }, SYNC_INTERVAL_MS);
+}
+
+function ensureScriptConfigured() {
+  if (!GOOGLE_SCRIPT_URL) {
+    throw new Error('Google Apps Script URL is not configured. Paste your Web App URL into GOOGLE_SCRIPT_URL in app.js.');
+  }
+}
+
+async function getStateFromSheet() {
+  ensureScriptConfigured();
+
+  const url = new URL(GOOGLE_SCRIPT_URL);
+  url.searchParams.set('action', 'state');
+  url.searchParams.set('_', Date.now());
+
+  const res = await fetch(url.toString(), { method: 'GET', cache: 'no-store' });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Could not load Sheet data.');
+  return data.state;
+}
+
+async function scriptRequest(action, payload = {}) {
+  ensureScriptConfigured();
+
+  const res = await fetch(GOOGLE_SCRIPT_URL, {
+    method: 'POST',
+    // text/plain keeps the request simple so Apps Script works from GitHub Pages
+    // without browser CORS preflight headaches.
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, ...payload }),
   });
-  stateEvents.onerror = () => {
-    console.warn('Live update connection interrupted; retrying automatically.');
-  };
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.error || 'Sheet update failed.');
+  setSyncStatus(true);
+  return data.state;
 }
 
-async function apiRequest(path, options = {}) {
-  const fetchOptions = {
-    method: options.method || 'GET',
-    headers: { 'Accept': 'application/json' },
-    cache: 'no-store',
-  };
-
-  if (options.body) {
-    fetchOptions.headers['Content-Type'] = 'application/json';
-    fetchOptions.body = JSON.stringify(options.body);
-  }
-
-  const res = await fetch(`${API_BASE}${path}`, fetchOptions);
-  const data = await res.json().catch(() => ({}));
-  setBackendStatus(true);
-  if (!res.ok) throw new Error(data.error || `Request failed with status ${res.status}.`);
-  return data;
-}
-
-function setBackendStatus(isConnected) {
-  backendConnected = isConnected;
+function setSyncStatus(isConnected) {
+  sheetConnected = isConnected;
   const status = document.getElementById('sync-status');
   if (!status) return;
 
-  status.textContent = isConnected ? 'LIVE SYNC' : 'SYNC OFFLINE';
+  status.textContent = isConnected ? 'SHEET SYNC' : 'SYNC OFFLINE';
   status.className = `sync-badge ${isConnected ? 'online' : 'offline'}`;
   status.title = isConnected
-    ? 'Connected to the shared checkout database.'
-    : 'Not connected to the backend. Checkout changes are disabled until this reconnects.';
+    ? 'Connected to the shared Google Sheet.'
+    : 'Not connected to Google Sheets. Checkout changes are disabled until this reconnects.';
+}
+
+function normalizeStatePayload(data) {
+  const state = data && data.state ? data.state : data;
+  return {
+    chromebooks: Array.isArray(state.chromebooks) ? state.chromebooks : [],
+    activityLog: Array.isArray(state.activityLog) ? state.activityLog : [],
+  };
 }
 
 function applyState(nextState, options = {}) {
+  nextState = normalizeStatePayload(nextState);
   chromebooks.splice(
     0,
     chromebooks.length,
@@ -658,7 +674,7 @@ function persistState() {
 
 function syncStateFromStorage(e) {
   if (e.key !== STORAGE_KEY || !e.newValue) return;
-  if (backendConnected) return;
+  if (sheetConnected) return;
 
   try {
     const parsed = JSON.parse(e.newValue);
