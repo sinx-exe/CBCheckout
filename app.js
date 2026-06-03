@@ -128,6 +128,48 @@ function updateStats() {
   document.getElementById('checkedout-count').textContent = out;
 }
 
+// ── LOADING SPINNER ──
+function showLoading() {
+  const loadingEl = document.getElementById('modal-loading');
+  const fieldsCheckout = document.getElementById('checkout-fields');
+  const fieldsCheckin = document.getElementById('checkin-fields');
+  const errorEl = document.getElementById('modal-error');
+  const submitBtn = document.getElementById('modal-submit-btn');
+  
+  if (loadingEl) loadingEl.classList.remove('hidden');
+  if (fieldsCheckout) fieldsCheckout.classList.add('hidden');
+  if (fieldsCheckin) fieldsCheckin.classList.add('hidden');
+  if (errorEl) errorEl.classList.add('hidden');
+  if (submitBtn) submitBtn.disabled = true;
+}
+
+function hideLoading() {
+  const loadingEl = document.getElementById('modal-loading');
+  const fieldsCheckout = document.getElementById('checkout-fields');
+  const fieldsCheckin = document.getElementById('checkin-fields');
+  const submitBtn = document.getElementById('modal-submit-btn');
+  
+  if (loadingEl) loadingEl.classList.add('hidden');
+  
+  if (currentAction === 'checkout') {
+    if (fieldsCheckout) fieldsCheckout.classList.remove('hidden');
+  } else {
+    if (fieldsCheckin) fieldsCheckin.classList.remove('hidden');
+  }
+  
+  if (submitBtn) submitBtn.disabled = false;
+}
+
+function showGlobalLoading() {
+  const loadingEl = document.getElementById('global-loading');
+  if (loadingEl) loadingEl.classList.remove('hidden');
+}
+
+function hideGlobalLoading() {
+  const loadingEl = document.getElementById('global-loading');
+  if (loadingEl) loadingEl.classList.add('hidden');
+}
+
 // ── ACTION MODAL ──
 function openModal(type) {
   if (!isLoggedIn) return;
@@ -170,12 +212,15 @@ async function submitAction() {
   const submitBtn = document.getElementById('modal-submit-btn');
   submitBtn.disabled = true;
 
+  showLoading();
+
   try {
     if (currentAction === 'checkout') {
       const deviceCode = document.getElementById('co-serial').value.trim();
       const studentId = document.getElementById('co-student').value.trim();
 
       if (!deviceCode || !studentId) {
+        hideLoading();
         showModalError('Please fill in both Chromebook barcode/serial and Student ID.');
         return;
       }
@@ -187,6 +232,7 @@ async function submitAction() {
       const studentId = document.getElementById('ci-student').value.trim();
 
       if (!studentId) {
+        hideLoading();
         showModalError('Please enter a Student ID.');
         return;
       }
@@ -195,10 +241,12 @@ async function submitAction() {
       applyState(nextState, { persist: true });
     }
 
+    hideLoading();
     renderGrid();
     updateStats();
     closeModal('action-modal');
   } catch (err) {
+    hideLoading();
     setSyncStatus(false);
     showModalError(err.message || 'Unable to update checkout data.');
   } finally {
@@ -416,6 +464,8 @@ async function saveField(field) {
   const val   = input.value.trim();
   if (!val) return;
 
+  showGlobalLoading();
+
   try {
     const nextState = await scriptRequest('updateDevice', {
       id: cb.id,
@@ -429,7 +479,9 @@ async function saveField(field) {
     cancelEdit(field);
 
     if (updatedCb) renderDeviceLog(updatedCb);
+    hideGlobalLoading();
   } catch (err) {
+    hideGlobalLoading();
     setSyncStatus(false);
     showModalError(err.message || `Unable to save ${field}.`);
   }
@@ -513,10 +565,15 @@ function renderLog() {
 
 async function clearLog() {
   if (!isLoggedIn) return;
+  
+  showGlobalLoading();
+  
   try {
     const nextState = await scriptRequest('clearLog');
     applyState(nextState, { persist: true });
+    hideGlobalLoading();
   } catch (err) {
+    hideGlobalLoading();
     setSyncStatus(false);
     console.warn(err);
   }

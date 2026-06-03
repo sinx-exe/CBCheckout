@@ -183,6 +183,10 @@
       </div>
 
       <div id="modal-error" class="login-error hidden"></div>
+      <div id="modal-loading" class="modal-loading hidden">
+        <div class="spinner"></div>
+        <p>Syncing...</p>
+      </div>
       <button class="btn-submit" id="modal-submit-btn" type="button" onclick="submitAction()">SUBMIT</button>
     </section>
   </div>
@@ -270,6 +274,11 @@
       <div class="scanner-status" id="scanner-status">Starting camera...</div>
       <button class="btn-submit scanner-cancel" type="button" onclick="closeScanner()">CANCEL SCAN</button>
     </section>
+  </div>
+
+  <div class="global-loading hidden" id="global-loading">
+    <div class="spinner"></div>
+    <p>Syncing...</p>
   </div>
 </body>
 </html>
