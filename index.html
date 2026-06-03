@@ -3,224 +3,78 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chromebook Checkout</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <title>Bag Boutique | Stylish Bags for Every Occasion</title>
+  <style>
+    
+  </style>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-  <!-- LOGIN OVERLAY -->
-  <div id="login-overlay" class="login-overlay">
-    <div class="login-box">
-      <div class="login-logo">
-        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-          <rect x="4" y="10" width="32" height="20" rx="3" stroke="currentColor" stroke-width="2.5"/>
-          <path d="M12 30 L8 36 M28 30 L32 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M6 36 L34 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="20" cy="20" r="3" fill="currentColor"/>
-        </svg>
-      </div>
-      <h2 class="login-title">CHROMEBOOK CHECKOUT</h2>
-      <p class="login-subtitle">Staff Login Required</p>
-      <div class="login-fields">
-        <div class="field-group">
-          <label>USERNAME</label>
-          <input type="text" id="login-username" placeholder="Enter username" autocomplete="off" />
-        </div>
-        <div class="field-group">
-          <label>PASSWORD</label>
-          <input type="password" id="login-password" placeholder="Enter password" />
-        </div>
-        <div id="login-error" class="login-error hidden">Incorrect credentials. Try again.</div>
-        <button class="btn-login" onclick="doLogin()">LOG IN</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MAIN APP -->
-  <div id="app" class="app hidden">
-
-    <!-- HEADER -->
-    <header class="header">
-      <div class="header-left">
-        <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
-          <rect x="4" y="10" width="32" height="20" rx="3" stroke="currentColor" stroke-width="2.5"/>
-          <path d="M12 30 L8 36 M28 30 L32 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M6 36 L34 36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="20" cy="20" r="3" fill="currentColor"/>
-        </svg>
-        <div>
-          <h1 class="app-title">CHROMEBOOK CHECKOUT</h1>
-          <span class="app-sub">Device Management System</span>
-        </div>
-      </div>
-      <div class="header-right">
-        <span class="user-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-          <span id="logged-in-user">username</span>
-        </span>
-        <button class="btn-theme" onclick="toggleTheme()" title="Toggle theme">
-          <span id="theme-icon">☀️</span>
-        </button>
-        <button class="btn-logout" onclick="doLogout()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          LOG OUT
-        </button>
-      </div>
+  <div class="page">
+    <header>
+      <div class="brand">Bag Boutique</div>
+      <nav>
+        <ul class="nav-list">
+          <li><a href="#collections">Collections</a></li>
+          <li><a href="#best-sellers">Best Sellers</a></li>
+          <li><a href="#why-us">Why Us</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
     </header>
 
-    <!-- ACTION BUTTONS -->
-    <section class="actions-section">
-      <button class="action-btn checkout-btn" onclick="openModal('checkout')">
-        <div class="action-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">Every day essentials</div>
+        <h1 class="hero-title">Discover the perfect bag for your next journey.</h1>
+        <p class="hero-text">Shop curated totes, backpacks, crossbody bags, and travel companions crafted with premium leather, sustainable fabrics, and modern details.</p>
+        <div class="hero-actions">
+          <button class="button button-primary">Shop New Arrivals</button>
+          <button class="button button-secondary">View Best Sellers</button>
         </div>
-        <div class="action-text">
-          <span class="action-label">CHECK OUT</span>
-          <span class="action-desc">Assign device to student</span>
-        </div>
-      </button>
-      <button class="action-btn checkin-btn" onclick="openModal('checkin')">
-        <div class="action-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        </div>
-        <div class="action-text">
-          <span class="action-label">CHECK IN</span>
-          <span class="action-desc">Return device to inventory</span>
-        </div>
-      </button>
-    </section>
-
-    <!-- STATS CARDS -->
-    <section class="stats-section">
-      <div class="stat-card available-card">
-        <div class="stat-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        </div>
-        <div class="stat-info">
-          <span class="stat-number" id="available-count">32</span>
-          <span class="stat-label">AVAILABLE</span>
-        </div>
-      </div>
-      <div class="stat-card checkedout-card">
-        <div class="stat-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        </div>
-        <div class="stat-info">
-          <span class="stat-number" id="checkedout-count">0</span>
-          <span class="stat-label">CHECKED OUT</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- CHROMEBOOK GRID -->
-    <section class="grid-section">
-      <div class="section-header">
-        <h2 class="section-title">DEVICE INVENTORY</h2>
-        <span class="section-hint">Click any device to view details</span>
-      </div>
-      <div class="chromebook-grid" id="chromebook-grid">
-        <!-- Generated by JS -->
-      </div>
-    </section>
-
-    <!-- ACTIVITY LOG -->
-    <section class="log-section">
-      <div class="section-header">
-        <h2 class="section-title">ACTIVITY LOG</h2>
-        <button class="btn-clear-log" onclick="clearLog()">CLEAR LOG</button>
-      </div>
-      <div class="log-container" id="activity-log">
-        <div class="log-empty">No activity recorded yet.</div>
-      </div>
-    </section>
-
-  </div>
-
-  <!-- CHECKOUT / CHECKIN MODAL -->
-  <div id="action-modal" class="modal-overlay hidden">
-    <div class="modal-box">
-      <button class="modal-close" onclick="closeModal('action-modal')">✕</button>
-      <h3 class="modal-title" id="modal-title">CHECK OUT</h3>
-      <p class="modal-desc" id="modal-desc">Assign a Chromebook to a student.</p>
-
-      <div id="checkout-fields">
-        <div class="field-group">
-          <label>CHROMEBOOK SERIAL #</label>
-          <input type="text" id="co-serial" placeholder="e.g. CB-000001" autocomplete="off"/>
-        </div>
-        <div class="field-group">
-          <label>STUDENT ID</label>
-          <input type="text" id="co-student" placeholder="e.g. S12345" autocomplete="off"/>
+        <div class="highlights">
+          <span class="pill">Free shipping on orders over $75</span>
+          <span class="pill">30-day returns � Lifetime support</span>
         </div>
       </div>
 
-      <div id="checkin-fields" class="hidden">
-        <div class="field-group">
-          <label>STUDENT ID</label>
-          <input type="text" id="ci-student" placeholder="e.g. S12345" autocomplete="off"/>
-        </div>
-      </div>
-
-      <div id="modal-error" class="login-error hidden"></div>
-      <button class="btn-submit" id="modal-submit-btn" onclick="submitAction()">SUBMIT</button>
-    </div>
-  </div>
-
-  <!-- DEVICE DETAIL MODAL -->
-  <div id="device-modal" class="modal-overlay hidden">
-    <div class="modal-box device-modal-box">
-      <button class="modal-close" onclick="closeModal('device-modal')">✕</button>
-      <div class="device-modal-header">
-        <div class="device-number-badge" id="dm-number">01</div>
-        <div>
-          <h3 class="modal-title" id="dm-title">CHROMEBOOK #1</h3>
-          <span class="status-pill" id="dm-status-pill">AVAILABLE</span>
-        </div>
-      </div>
-
-      <div class="device-detail-grid">
-        <div class="detail-row">
-          <span class="detail-label">BARCODE</span>
-          <div class="detail-value-row">
-            <span class="detail-value mono" id="dm-barcode">—</span>
-            <button class="edit-icon-btn" id="dm-barcode-edit-btn" onclick="editField('barcode')" title="Edit barcode">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-            <div class="inline-edit hidden" id="dm-barcode-edit">
-              <input type="text" id="dm-barcode-input" />
-              <button onclick="saveField('barcode')">✓</button>
-              <button onclick="cancelEdit('barcode')">✕</button>
-            </div>
+      <div class="hero-visual">
+        <div class="hero-card">
+          <img src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=900&q=80" alt="Fashionable bag on display" />
+          <div class="hero-card-body">
+            <h2 class="hero-card-title">The Urban Carryall</h2>
+            <p class="hero-card-copy">A polished tote with room for laptop, wallet, and weekday essentials.</p>
+            <div class="pill">Limited Edition</div>
           </div>
         </div>
-        <div class="detail-row">
-          <span class="detail-label">SERIAL NUMBER</span>
-          <div class="detail-value-row">
-            <span class="detail-value mono" id="dm-serial">—</span>
-            <button class="edit-icon-btn" id="dm-serial-edit-btn" onclick="editField('serial')" title="Edit serial">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-            <div class="inline-edit hidden" id="dm-serial-edit">
-              <input type="text" id="dm-serial-input" />
-              <button onclick="saveField('serial')">✓</button>
-              <button onclick="cancelEdit('serial')">✕</button>
-            </div>
-          </div>
-        </div>
-        <div class="detail-row" id="dm-student-row">
-          <span class="detail-label">CHECKED OUT BY</span>
-          <span class="detail-value mono" id="dm-student">—</span>
-        </div>
-        <div class="detail-row" id="dm-time-row">
-          <span class="detail-label">CHECKOUT TIME</span>
-          <span class="detail-value mono" id="dm-time">—</span>
-        </div>
       </div>
-    </div>
-  </div>
+    </section>
 
-  <script src="app.js"></script>
+    <section class="featured" id="best-sellers">
+      <article class="featured-card">
+        <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80" alt="Minimal leather backpack" />
+        <h3>Minimalist Backpack</h3>
+        <p>Refined design, padded straps, and an interior organizer for daily commute ease.</p>
+        <div class="price">$120</div>
+      </article>
+      <article class="featured-card">
+        <img src="https://images.unsplash.com/photo-1542831371-d531d36971e6?auto=format&fit=crop&w=600&q=80" alt="Elegant shoulder bag" />
+        <h3>Everyday Shoulder Bag</h3>
+        <p>Soft silhouette, secure magnetic closure, and a versatile strap for all-day style.</p>
+        <div class="price">$94</div>
+      </article>
+      <article class="featured-card">
+        <img src="https://images.unsplash.com/photo-1495121605193-b116b5b9c5d9?auto=format&fit=crop&w=600&q=80" alt="Travel duffel bag" />
+        <h3>Weekend Duffel</h3>
+        <p>Durable travel companion with water-resistant fabric and thoughtful packing pockets.</p>
+        <div class="price">$148</div>
+      </article>
+    </section>
+
+    <footer id="contact">
+      <div>Bag Boutique � Crafted with care for your everyday carry</div>
+      <div>Questions? Email hello@bagboutique.com</div>
+    </footer>
+  </div>
 </body>
 </html>
