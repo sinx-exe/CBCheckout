@@ -647,7 +647,7 @@ function setSyncStatus(isConnected) {
   const status = document.getElementById('sync-status');
   if (!status) return;
 
-  status.textContent = isConnected ? 'SHEET SYNC' : 'SYNC OFFLINE';
+  status.textContent = isConnected ? 'SHEET SYNC [syncs every 10s]' : 'SYNC OFFLINE';
   status.className = `sync-badge ${isConnected ? 'online' : 'offline'}`;
   status.title = isConnected
     ? 'Connected to the shared Google Sheet.'
