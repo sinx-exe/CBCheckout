@@ -41,6 +41,30 @@ function createDefaultChromebooks() {
   }));
 }
 
+// ── LOADING BAR ──
+function showLoading() {
+  const container = document.getElementById('loading-bar-container');
+  const bar = document.getElementById('loading-bar');
+  if (!container || !bar) return;
+  
+  container.classList.add('active');
+  bar.classList.remove('complete');
+  bar.style.width = '10%';
+}
+
+function hideLoading() {
+  const container = document.getElementById('loading-bar-container');
+  const bar = document.getElementById('loading-bar');
+  if (!container || !bar) return;
+  
+  bar.classList.add('complete');
+  setTimeout(() => {
+    container.classList.remove('active');
+    bar.classList.remove('complete');
+    bar.style.width = '0%';
+  }, 600);
+}
+
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
   renderGrid();
@@ -170,6 +194,8 @@ async function submitAction() {
   const submitBtn = document.getElementById('modal-submit-btn');
   submitBtn.disabled = true;
 
+  showLoading();
+
   try {
     if (currentAction === 'checkout') {
       const deviceCode = document.getElementById('co-serial').value.trim();
@@ -177,6 +203,7 @@ async function submitAction() {
 
       if (!deviceCode || !studentId) {
         showModalError('Please fill in both Chromebook barcode/serial and Student ID.');
+        hideLoading();
         return;
       }
 
@@ -188,6 +215,7 @@ async function submitAction() {
 
       if (!studentId) {
         showModalError('Please enter a Student ID.');
+        hideLoading();
         return;
       }
 
@@ -195,10 +223,12 @@ async function submitAction() {
       applyState(nextState, { persist: true });
     }
 
+    hideLoading();
     renderGrid();
     updateStats();
     closeModal('action-modal');
   } catch (err) {
+    hideLoading();
     setSyncStatus(false);
     showModalError(err.message || 'Unable to update checkout data.');
   } finally {
@@ -416,6 +446,8 @@ async function saveField(field) {
   const val   = input.value.trim();
   if (!val) return;
 
+  showLoading();
+
   try {
     const nextState = await scriptRequest('updateDevice', {
       id: cb.id,
@@ -429,7 +461,9 @@ async function saveField(field) {
     cancelEdit(field);
 
     if (updatedCb) renderDeviceLog(updatedCb);
+    hideLoading();
   } catch (err) {
+    hideLoading();
     setSyncStatus(false);
     showModalError(err.message || `Unable to save ${field}.`);
   }
@@ -513,10 +547,15 @@ function renderLog() {
 
 async function clearLog() {
   if (!isLoggedIn) return;
+  
+  showLoading();
+  
   try {
     const nextState = await scriptRequest('clearLog');
     applyState(nextState, { persist: true });
+    hideLoading();
   } catch (err) {
+    hideLoading();
     setSyncStatus(false);
     console.warn(err);
   }
@@ -524,12 +563,15 @@ async function clearLog() {
 
 // ── HELPERS ──
 async function connectSheet() {
+  showLoading();
   try {
     const nextState = await getStateFromSheet();
     setSyncStatus(true);
     applyState(nextState, { persist: true });
+    hideLoading();
     startPollingSheet();
   } catch (err) {
+    hideLoading();
     setSyncStatus(false);
     console.warn('Google Sheet unavailable; showing cached state only:', err.message);
   }
@@ -539,11 +581,14 @@ function startPollingSheet() {
   if (syncTimer) return;
 
   syncTimer = window.setInterval(async () => {
+    showLoading();
     try {
       const nextState = await getStateFromSheet();
       setSyncStatus(true);
       applyState(nextState, { persist: true });
+      hideLoading();
     } catch (err) {
+      hideLoading();
       setSyncStatus(false);
       console.warn('Sheet sync failed:', err.message);
     }
