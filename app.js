@@ -9,7 +9,7 @@ const STORAGE_KEY = 'cbcheckout-state-v1';
 // Paste your deployed Google Apps Script Web App URL here.
 // It should look like:
 // https://script.google.com/macros/s/AKfycb.../exec
-const GOOGLE_SCRIPT_URL = '';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxOZVoAq1PSwbslyHoMufRdsvbYGBhpSGIAfndUK97nIvMKT4zGiP3pW7Obgk6qE4NwVQ/exec';
 
 const SYNC_INTERVAL_MS = 10000;
 
