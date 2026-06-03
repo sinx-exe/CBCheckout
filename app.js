@@ -41,23 +41,40 @@ function createDefaultChromebooks() {
   }));
 }
 
-// ── LOADING BAR ──
-function showLoading() {
+// ── PROGRESS BAR ──
+let progressInterval = null;
+
+function showProgress() {
   const container = document.getElementById('loading-bar-container');
   const bar = document.getElementById('loading-bar');
   if (!container || !bar) return;
   
   container.classList.add('active');
   bar.classList.remove('complete');
-  bar.style.width = '10%';
+  bar.style.width = '0%';
+  
+  // Start progress
+  let width = 0;
+  if (progressInterval) clearInterval(progressInterval);
+  
+  progressInterval = setInterval(() => {
+    width += Math.random() * 25;
+    if (width > 85) width = 85;
+    bar.style.width = width + '%';
+  }, 200);
 }
 
-function hideLoading() {
+function completeProgress() {
   const container = document.getElementById('loading-bar-container');
   const bar = document.getElementById('loading-bar');
   if (!container || !bar) return;
   
+  if (progressInterval) clearInterval(progressInterval);
+  
+  // Jump to 100%
+  bar.style.width = '100%';
   bar.classList.add('complete');
+  
   setTimeout(() => {
     container.classList.remove('active');
     bar.classList.remove('complete');
@@ -194,7 +211,7 @@ async function submitAction() {
   const submitBtn = document.getElementById('modal-submit-btn');
   submitBtn.disabled = true;
 
-  showLoading();
+  showProgress();
 
   try {
     if (currentAction === 'checkout') {
@@ -203,7 +220,7 @@ async function submitAction() {
 
       if (!deviceCode || !studentId) {
         showModalError('Please fill in both Chromebook barcode/serial and Student ID.');
-        hideLoading();
+        completeProgress();
         return;
       }
 
@@ -215,7 +232,7 @@ async function submitAction() {
 
       if (!studentId) {
         showModalError('Please enter a Student ID.');
-        hideLoading();
+        completeProgress();
         return;
       }
 
@@ -223,12 +240,12 @@ async function submitAction() {
       applyState(nextState, { persist: true });
     }
 
-    hideLoading();
+    completeProgress();
     renderGrid();
     updateStats();
     closeModal('action-modal');
   } catch (err) {
-    hideLoading();
+    completeProgress();
     setSyncStatus(false);
     showModalError(err.message || 'Unable to update checkout data.');
   } finally {
@@ -446,7 +463,7 @@ async function saveField(field) {
   const val   = input.value.trim();
   if (!val) return;
 
-  showLoading();
+  showProgress();
 
   try {
     const nextState = await scriptRequest('updateDevice', {
@@ -461,9 +478,9 @@ async function saveField(field) {
     cancelEdit(field);
 
     if (updatedCb) renderDeviceLog(updatedCb);
-    hideLoading();
+    completeProgress();
   } catch (err) {
-    hideLoading();
+    completeProgress();
     setSyncStatus(false);
     showModalError(err.message || `Unable to save ${field}.`);
   }
@@ -548,14 +565,14 @@ function renderLog() {
 async function clearLog() {
   if (!isLoggedIn) return;
   
-  showLoading();
+  showProgress();
   
   try {
     const nextState = await scriptRequest('clearLog');
     applyState(nextState, { persist: true });
-    hideLoading();
+    completeProgress();
   } catch (err) {
-    hideLoading();
+    completeProgress();
     setSyncStatus(false);
     console.warn(err);
   }
@@ -563,15 +580,12 @@ async function clearLog() {
 
 // ── HELPERS ──
 async function connectSheet() {
-  showLoading();
   try {
     const nextState = await getStateFromSheet();
     setSyncStatus(true);
     applyState(nextState, { persist: true });
-    hideLoading();
     startPollingSheet();
   } catch (err) {
-    hideLoading();
     setSyncStatus(false);
     console.warn('Google Sheet unavailable; showing cached state only:', err.message);
   }
@@ -581,14 +595,11 @@ function startPollingSheet() {
   if (syncTimer) return;
 
   syncTimer = window.setInterval(async () => {
-    showLoading();
     try {
       const nextState = await getStateFromSheet();
       setSyncStatus(true);
       applyState(nextState, { persist: true });
-      hideLoading();
     } catch (err) {
-      hideLoading();
       setSyncStatus(false);
       console.warn('Sheet sync failed:', err.message);
     }

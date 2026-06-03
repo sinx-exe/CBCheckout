@@ -311,7 +311,7 @@ input {
   color: var(--red);
 }
 
-/* ── LOADING BAR ── */
+/* ── PROGRESS BAR ── */
 .loading-bar-container {
   position: fixed;
   top: 0;
@@ -327,37 +327,17 @@ input {
   height: 100%;
   background: linear-gradient(to right, var(--accent), var(--green), var(--accent));
   width: 0%;
-  transition: width 0.3s ease;
+  transition: width 0.2s ease;
   box-shadow: 0 0 10px var(--accent);
 }
 
-.loading-bar-container.active .loading-bar {
-  animation: loadingPulse 1.5s infinite;
-}
-
-@keyframes loadingPulse {
-  0% {
-    width: 10%;
-    opacity: 0.8;
-  }
-  50% {
-    width: 70%;
-    opacity: 1;
-  }
-  100% {
-    width: 90%;
-    opacity: 0.8;
-  }
-}
-
 .loading-bar.complete {
-  width: 100%;
   animation: completeBar 0.6s ease forwards;
 }
 
 @keyframes completeBar {
   0% {
-    width: 90%;
+    width: 100%;
     opacity: 1;
   }
   100% {
