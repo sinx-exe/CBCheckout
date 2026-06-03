@@ -41,47 +41,6 @@ function createDefaultChromebooks() {
   }));
 }
 
-// ── PROGRESS BAR ──
-let progressInterval = null;
-
-function showProgress() {
-  const container = document.getElementById('loading-bar-container');
-  const bar = document.getElementById('loading-bar');
-  if (!container || !bar) return;
-  
-  container.classList.add('active');
-  bar.classList.remove('complete');
-  bar.style.width = '0%';
-  
-  // Start progress
-  let width = 0;
-  if (progressInterval) clearInterval(progressInterval);
-  
-  progressInterval = setInterval(() => {
-    width += Math.random() * 25;
-    if (width > 85) width = 85;
-    bar.style.width = width + '%';
-  }, 200);
-}
-
-function completeProgress() {
-  const container = document.getElementById('loading-bar-container');
-  const bar = document.getElementById('loading-bar');
-  if (!container || !bar) return;
-  
-  if (progressInterval) clearInterval(progressInterval);
-  
-  // Jump to 100%
-  bar.style.width = '100%';
-  bar.classList.add('complete');
-  
-  setTimeout(() => {
-    container.classList.remove('active');
-    bar.classList.remove('complete');
-    bar.style.width = '0%';
-  }, 600);
-}
-
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
   renderGrid();
@@ -211,8 +170,6 @@ async function submitAction() {
   const submitBtn = document.getElementById('modal-submit-btn');
   submitBtn.disabled = true;
 
-  showProgress();
-
   try {
     if (currentAction === 'checkout') {
       const deviceCode = document.getElementById('co-serial').value.trim();
@@ -220,7 +177,6 @@ async function submitAction() {
 
       if (!deviceCode || !studentId) {
         showModalError('Please fill in both Chromebook barcode/serial and Student ID.');
-        completeProgress();
         return;
       }
 
@@ -232,7 +188,6 @@ async function submitAction() {
 
       if (!studentId) {
         showModalError('Please enter a Student ID.');
-        completeProgress();
         return;
       }
 
@@ -240,12 +195,10 @@ async function submitAction() {
       applyState(nextState, { persist: true });
     }
 
-    completeProgress();
     renderGrid();
     updateStats();
     closeModal('action-modal');
   } catch (err) {
-    completeProgress();
     setSyncStatus(false);
     showModalError(err.message || 'Unable to update checkout data.');
   } finally {
@@ -463,8 +416,6 @@ async function saveField(field) {
   const val   = input.value.trim();
   if (!val) return;
 
-  showProgress();
-
   try {
     const nextState = await scriptRequest('updateDevice', {
       id: cb.id,
@@ -478,9 +429,7 @@ async function saveField(field) {
     cancelEdit(field);
 
     if (updatedCb) renderDeviceLog(updatedCb);
-    completeProgress();
   } catch (err) {
-    completeProgress();
     setSyncStatus(false);
     showModalError(err.message || `Unable to save ${field}.`);
   }
@@ -564,15 +513,10 @@ function renderLog() {
 
 async function clearLog() {
   if (!isLoggedIn) return;
-  
-  showProgress();
-  
   try {
     const nextState = await scriptRequest('clearLog');
     applyState(nextState, { persist: true });
-    completeProgress();
   } catch (err) {
-    completeProgress();
     setSyncStatus(false);
     console.warn(err);
   }

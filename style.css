@@ -311,41 +311,6 @@ input {
   color: var(--red);
 }
 
-/* ── PROGRESS BAR ── */
-.loading-bar-container {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: transparent;
-  z-index: 999;
-  pointer-events: none;
-}
-
-.loading-bar {
-  height: 100%;
-  background: linear-gradient(to right, var(--accent), var(--green), var(--accent));
-  width: 0%;
-  transition: width 0.2s ease;
-  box-shadow: 0 0 10px var(--accent);
-}
-
-.loading-bar.complete {
-  animation: completeBar 0.6s ease forwards;
-}
-
-@keyframes completeBar {
-  0% {
-    width: 100%;
-    opacity: 1;
-  }
-  100% {
-    width: 100%;
-    opacity: 0;
-  }
-}
-
 /* ── ACTIONS ── */
 .actions-section {
   display: grid;
