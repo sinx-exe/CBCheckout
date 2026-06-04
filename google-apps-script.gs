@@ -21,6 +21,7 @@ const SPREADSHEET_ID = '19mq5Y_fighXt1KX3oO7LhST142hJdfh0yDIXAcN7waY';
 
 const DEVICES_SHEET = 'Devices';
 const LOG_SHEET = 'ActivityLog';
+const BACKEND_VERSION = 'notes-sync-2026-06-04-v2';
 
 function doGet(e) {
   try {
@@ -29,15 +30,20 @@ function doGet(e) {
     const params = e && e.parameter ? e.parameter : {};
     const action = (params.action || 'state').toLowerCase();
     if (action === 'state') {
-      return json_({ ok: true, state: getState_() });
+      return json_({ ok: true, version: BACKEND_VERSION, state: getState_() });
     }
 
     if (action === 'setup') {
       return json_({
         ok: true,
+        version: BACKEND_VERSION,
         message: 'Spreadsheet setup complete.',
         state: getState_(),
       });
+    }
+
+    if (action === 'debug') {
+      return json_({ ok: true, version: BACKEND_VERSION, debug: getDebugInfo_() });
     }
 
     return json_({ ok: false, error: 'Unknown GET action.' });
@@ -77,7 +83,7 @@ function doPost(e) {
       throw new Error('Unknown POST action.');
     }
 
-    return json_({ ok: true, state: getState_() });
+    return json_({ ok: true, version: BACKEND_VERSION, state: getState_() });
   } catch (err) {
     return json_({ ok: false, error: err.message });
   } finally {
@@ -268,6 +274,23 @@ function getState_() {
   return {
     chromebooks,
     activityLog: logs.map(logToFrontend_),
+  };
+}
+
+function getDebugInfo_() {
+  const devices = getSheet_(DEVICES_SHEET);
+  const lastColumn = Math.max(devices.getLastColumn(), 1);
+  const headers = devices.getRange(1, 1, 1, lastColumn).getValues()[0];
+  const firstDataRow = devices.getLastRow() >= 2
+    ? devices.getRange(2, 1, 1, lastColumn).getValues()[0]
+    : [];
+
+  return {
+    spreadsheetId: getSpreadsheet_().getId(),
+    devicesSheet: DEVICES_SHEET,
+    headers,
+    firstDataRow,
+    notesColumnIndex: headers.findIndex(header => normalizeHeader_(header) === normalizeHeader_('Notes')) + 1,
   };
 }
 
