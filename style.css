@@ -483,17 +483,6 @@ input {
   box-shadow: 0 4px 12px rgba(255, 77, 106, 0.2);
 }
 
-.note-indicator {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 0;
-  height: 0;
-  border-left: 18px solid transparent;
-  border-top: 18px solid var(--amber);
-  border-right: 0 solid transparent;
-}
-
 /* ── ACTIVITY LOG ── */
 .log-section {
   margin-bottom: 24px;
@@ -738,104 +727,6 @@ input {
 }
 .status-pill.available  { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
 .status-pill.checked-out { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
-
-/* ── DEVICE NOTES ── */
-.device-notes-section {
-  margin-bottom: 18px;
-}
-
-.device-notes-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.device-notes-title {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--text2);
-}
-
-.device-notes-display {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  min-height: 60px;
-}
-
-.device-notes-text {
-  font-family: 'Roboto Mono', monospace;
-  font-size: 0.82rem;
-  color: var(--text);
-  line-height: 1.4;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.device-notes-edit {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.device-notes-edit textarea {
-  width: 100%;
-  min-height: 80px;
-  background: var(--bg3);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm);
-  padding: 10px;
-  color: var(--text);
-  font-family: 'Roboto Mono', monospace;
-  font-size: 0.82rem;
-  outline: none;
-  resize: vertical;
-}
-
-.device-notes-edit textarea:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
-
-.notes-edit-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.notes-edit-buttons button {
-  flex: 1;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 8px;
-  color: var(--text2);
-  font-family: 'Lexend Deca', sans-serif;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.notes-edit-buttons button:first-child {
-  border-color: var(--green);
-  color: var(--green);
-}
-.notes-edit-buttons button:first-child:hover {
-  background: var(--green-dim);
-}
-
-.notes-edit-buttons button:last-child {
-  border-color: var(--border);
-  color: var(--text3);
-}
-.notes-edit-buttons button:last-child:hover {
-  border-color: var(--text3);
-  background: var(--bg2);
-}
 
 .device-detail-grid {
   display: flex;

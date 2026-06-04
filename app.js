@@ -38,7 +38,6 @@ function createDefaultChromebooks() {
     checkedOut: false,
     studentId: null,
     checkoutTime: null,
-    notes: '',
     log: [],
   }));
 }
@@ -136,12 +135,7 @@ function renderGrid() {
       ? `#${cb.id} – Checked out by ${cb.studentId}`
       : `#${cb.id} – Available`
     );
-    let noteIndicator = '';
-    if (cb.notes && cb.notes.trim()) {
-      noteIndicator = '<div class="note-indicator" title="This device has notes"></div>';
-    }
     btn.innerHTML = `
-      ${noteIndicator}
       <span class="cb-num">${String(cb.id).padStart(2, '0')}</span>
       <span class="cb-status-dot"></span>
     `;
@@ -453,11 +447,8 @@ function openDeviceModal(id) {
     document.getElementById(btnId).style.display = isLoggedIn ? '' : 'none';
   });
 
-  renderDeviceNotes(cb);
-
   cancelEdit('barcode');
   cancelEdit('serial');
-  cancelEditNotes();
 
   renderDeviceLog(cb);
 
@@ -776,7 +767,6 @@ function syncStateFromStorage(e) {
 function reviveChromebook(cb) {
   return {
     ...cb,
-    notes: cb.notes || '',
     checkoutTime: cb.checkoutTime ? new Date(cb.checkoutTime) : null,
     log: Array.isArray(cb.log) ? cb.log.map(reviveLogEntry) : [],
   };
@@ -787,67 +777,6 @@ function serializeLogEntry(entry) {
     ...entry,
     time: entry.time ? entry.time.toISOString() : null,
   };
-}
-
-// ── NOTES ──
-function renderDeviceNotes(cb) {
-  const container = document.getElementById('dm-notes-display');
-  const editDiv = document.getElementById('dm-notes-edit');
-  const notesText = document.getElementById('dm-notes-text');
-  const editBtn = document.getElementById('dm-notes-edit-btn');
-
-  if (!container || !notesText || !editBtn) return;
-
-  if (cb.notes && cb.notes.trim()) {
-    notesText.textContent = cb.notes;
-    container.style.display = '';
-  } else {
-    container.style.display = 'none';
-  }
-
-  editBtn.style.display = isLoggedIn ? '' : 'none';
-  if (editDiv) editDiv.classList.add('hidden');
-}
-
-function editNotes() {
-  if (!isLoggedIn) return;
-  const cb = chromebooks.find(c => c.id === openDeviceIndex);
-  if (!cb) return;
-
-  const container = document.getElementById('dm-notes-display');
-  const editDiv = document.getElementById('dm-notes-edit');
-  const textarea = document.getElementById('dm-notes-textarea');
-  const editBtn = document.getElementById('dm-notes-edit-btn');
-
-  textarea.value = cb.notes;
-  if (container) container.style.display = 'none';
-  if (editBtn) editBtn.style.display = 'none';
-  if (editDiv) editDiv.classList.remove('hidden');
-  textarea.focus();
-}
-
-async function saveNotes() {
-  if (!isLoggedIn) return;
-  const cb = chromebooks.find(c => c.id === openDeviceIndex);
-  if (!cb) return;
-
-  const textarea = document.getElementById('dm-notes-textarea');
-  const val = textarea.value.trim();
-
-  cb.notes = val;
-  renderDeviceNotes(cb);
-  persistState();
-  renderGrid();
-}
-
-function cancelEditNotes() {
-  const container = document.getElementById('dm-notes-display');
-  const editDiv = document.getElementById('dm-notes-edit');
-  const editBtn = document.getElementById('dm-notes-edit-btn');
-
-  if (container) container.style.display = '';
-  if (editBtn) editBtn.style.display = isLoggedIn ? '' : 'none';
-  if (editDiv) editDiv.classList.add('hidden');
 }
 
 function reviveLogEntry(entry) {
