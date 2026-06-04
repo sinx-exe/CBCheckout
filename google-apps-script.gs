@@ -253,12 +253,12 @@ function getState_() {
 
     return {
       id,
-      barcode: String(device.Barcode || ''),
-      serial: String(device.Serial || ''),
-      checkedOut: toBoolean_(device.CheckedOut),
-      studentId: device.StudentID ? String(device.StudentID) : null,
-      checkoutTime: device.CheckoutTime ? new Date(device.CheckoutTime).toISOString() : null,
-      notes: String(device.Notes || ''),
+      barcode: String(getDeviceValue_(device, 'Barcode') || ''),
+      serial: String(getDeviceValue_(device, 'Serial') || ''),
+      checkedOut: toBoolean_(getDeviceValue_(device, 'CheckedOut')),
+      studentId: getDeviceValue_(device, 'StudentID') ? String(getDeviceValue_(device, 'StudentID')) : null,
+      checkoutTime: getDeviceValue_(device, 'CheckoutTime') ? new Date(getDeviceValue_(device, 'CheckoutTime')).toISOString() : null,
+      notes: String(getDeviceValue_(device, 'Notes') || ''),
       log: logs
         .filter(entry => Number(entry.DeviceID) === id)
         .map(logToFrontend_),
@@ -384,9 +384,20 @@ function addLog_(type, deviceId, message) {
 function rowToObject_(headers, row) {
   const obj = {};
   headers.forEach((header, index) => {
-    obj[header] = row[index];
+    const cleanHeader = String(header || '').trim();
+    obj[cleanHeader] = row[index];
   });
   return obj;
+}
+
+function getDeviceValue_(device, fieldName) {
+  const target = normalizeHeader_(fieldName);
+  const key = Object.keys(device).find(header => normalizeHeader_(header) === target);
+  return key ? device[key] : '';
+}
+
+function normalizeHeader_(header) {
+  return String(header || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 function logToFrontend_(entry) {

@@ -295,19 +295,24 @@ async function submitAction() {
         return;
       }
 
-      const nextState = await scriptRequest('checkout', { deviceCode, studentId });
+      const nextState = await scriptRequest('checkout', {
+        deviceCode: resolveDeviceCodeForBackend(deviceCode),
+        studentId,
+      });
       applyState(nextState, { persist: true });
 
     } else {
-      const studentId = document.getElementById('ci-student').value.trim();
+      const lookup = document.getElementById('ci-student').value.trim();
 
-      if (!studentId) {
+      if (!lookup) {
         hideLoading();
         showModalError('Please enter a Student ID or Chromebook number.');
         return;
       }
 
-      const nextState = await scriptRequest('checkin', { studentId });
+      const nextState = await scriptRequest('checkin', {
+        studentId: resolveCheckinLookupForBackend(lookup),
+      });
       applyState(nextState, { persist: true });
     }
 
@@ -337,6 +342,17 @@ function findChromebookByDeviceCode(code) {
     c.id === deviceNumber ||
     c.barcode.toLowerCase() === normalized || c.serial.toLowerCase() === normalized
   );
+}
+
+function resolveDeviceCodeForBackend(code) {
+  const cb = findChromebookByDeviceCode(code);
+  return cb ? (cb.barcode || cb.serial || String(cb.id)) : code;
+}
+
+function resolveCheckinLookupForBackend(lookup) {
+  const cb = findChromebookByDeviceCode(lookup);
+  if (cb && cb.checkedOut && cb.studentId) return cb.studentId;
+  return lookup;
 }
 
 function parseChromebookNumber(value) {
