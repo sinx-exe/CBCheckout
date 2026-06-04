@@ -5,7 +5,6 @@
 const TOTAL = 32;
 const CREDS = { username: "username", password: "password" };
 const STORAGE_KEY = 'cbcheckout-state-v1';
-const LOGIN_KEY = 'cbcheckout-logged-in';
 
 // Paste your deployed Google Apps Script Web App URL here.
 // It should look like:
@@ -61,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  loadSavedLogin();
   window.addEventListener('storage', syncStateFromStorage);
 });
 
@@ -73,7 +71,6 @@ function doLogin() {
 
   if (user === CREDS.username && pass === CREDS.password) {
     isLoggedIn = true;
-    saveLogin();
     document.getElementById('login-overlay').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     document.getElementById('logged-in-user').textContent = user;
@@ -86,46 +83,14 @@ function doLogin() {
 
 function doLogout() {
   isLoggedIn = false;
-  clearLogin();
   closeScanner();
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login-overlay').classList.remove('hidden');
   document.getElementById('login-username').value = '';
   document.getElementById('login-password').value = '';
-  document.getElementById('logged-in-user').textContent = 'username';
   document.getElementById('login-error').classList.add('hidden');
   closeModal('action-modal');
   closeModal('device-modal');
-}
-
-function saveLogin() {
-  try {
-    localStorage.setItem(LOGIN_KEY, 'true');
-  } catch (err) {
-    // ignore if storage is unavailable
-  }
-}
-
-function clearLogin() {
-  try {
-    localStorage.removeItem(LOGIN_KEY);
-  } catch (err) {
-    // ignore if storage is unavailable
-  }
-}
-
-function loadSavedLogin() {
-  try {
-    const saved = localStorage.getItem(LOGIN_KEY);
-    if (saved === 'true') {
-      isLoggedIn = true;
-      document.getElementById('login-overlay').classList.add('hidden');
-      document.getElementById('app').classList.remove('hidden');
-      document.getElementById('logged-in-user').textContent = CREDS.username;
-    }
-  } catch (err) {
-    // ignore if storage is unavailable
-  }
 }
 
 // ── THEME ──
