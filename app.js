@@ -214,7 +214,7 @@ function openModal(type) {
 
   if (type === 'checkout') {
     document.getElementById('modal-title').textContent = 'CHECK OUT';
-    document.getElementById('modal-desc').textContent  = 'Assign a Chromebook to a student.';
+    document.getElementById('modal-desc').textContent  = 'Assign a Chromebook number, barcode, or serial to a student.';
     document.getElementById('checkout-fields').classList.remove('hidden');
     document.getElementById('checkin-fields').classList.add('hidden');
     submitBtn.style.background = 'var(--red)';
@@ -223,7 +223,7 @@ function openModal(type) {
     setTimeout(() => document.getElementById('co-serial').focus(), 100);
   } else {
     document.getElementById('modal-title').textContent = 'CHECK IN';
-    document.getElementById('modal-desc').textContent  = 'Return a Chromebook to inventory.';
+    document.getElementById('modal-desc').textContent  = 'Return a Chromebook by Student ID or Chromebook number.';
     document.getElementById('checkout-fields').classList.add('hidden');
     document.getElementById('checkin-fields').classList.remove('hidden');
     submitBtn.style.background = 'var(--green)';
@@ -291,7 +291,7 @@ async function submitAction() {
 
       if (!deviceCode || !studentId) {
         hideLoading();
-        showModalError('Please fill in both Chromebook barcode/serial and Student ID.');
+        showModalError('Please fill in both Chromebook number/barcode/serial and Student ID.');
         return;
       }
 
@@ -303,7 +303,7 @@ async function submitAction() {
 
       if (!studentId) {
         hideLoading();
-        showModalError('Please enter a Student ID.');
+        showModalError('Please enter a Student ID or Chromebook number.');
         return;
       }
 
@@ -332,9 +332,16 @@ function showModalError(msg) {
 
 function findChromebookByDeviceCode(code) {
   const normalized = code.trim().toLowerCase();
+  const deviceNumber = parseChromebookNumber(normalized);
   return chromebooks.find(c =>
+    c.id === deviceNumber ||
     c.barcode.toLowerCase() === normalized || c.serial.toLowerCase() === normalized
   );
+}
+
+function parseChromebookNumber(value) {
+  const match = String(value || '').trim().toLowerCase().match(/^(?:chromebook|chrome\s*book|cb|#)?\s*#?\s*(\d+)$/);
+  return match ? Number(match[1]) : null;
 }
 
 // ── BARCODE SCANNER ──

@@ -1,4 +1,4 @@
-/*
+  /*
   Chromebook Checkout - Google Apps Script Backend
 
   How this works:
@@ -8,7 +8,7 @@
 
   Spreadsheet tabs created/used by this script:
   1. Devices
-     ID | Barcode | Serial | CheckedOut | StudentID | CheckoutTime | UpdatedAt | Notes
+     ID | Barcode | Serial | CheckedOut | StudentID | CheckoutTime | UpdatedAt
   2. ActivityLog
      Timestamp | Type | DeviceID | Message
 */
@@ -17,7 +17,7 @@ const TOTAL_DEVICES = 32;
 
 // If this script is bound to the Google Sheet, leave this blank.
 // If this is a standalone Apps Script project, paste your Sheet ID here.
-const SPREADSHEET_ID = '';
+const SPREADSHEET_ID = '19mq5Y_fighXt1KX3oO7LhST142hJdfh0yDIXAcN7waY';
 
 const DEVICES_SHEET = 'Devices';
 const LOG_SHEET = 'ActivityLog';
@@ -67,10 +67,6 @@ function doPost(e) {
       checkin_(body.studentId);
     } else if (action === 'updateDevice') {
       updateDevice_(body.id, body.field, body.value);
-    } else if (action === 'updateNote') {
-      updateNote_(body.id, body.note);
-    } else if (action === 'addDevice') {
-      addDevice_(body.barcode, body.serial);
     } else if (action === 'clearLog') {
       clearLog_();
     } else {
@@ -182,60 +178,6 @@ function updateDevice_(id, field, value) {
   addLog_('edit', cleanId, `#${cleanId} ${cleanField} changed: "${oldValue}" -> "${cleanValue}"`);
 }
 
-function updateNote_(id, note) {
-  const cleanId = Number(id);
-  const cleanNote = String(note || '').trim();
-
-  if (!cleanId) throw new Error('Missing Chromebook ID.');
-
-  const devices = getDeviceRows_();
-  const match = devices.find(item => Number(item.device.ID) === cleanId);
-  if (!match) throw new Error('Chromebook not found.');
-
-  updateDeviceRow_(match.rowNumber, {
-    Notes: cleanNote,
-    UpdatedAt: new Date(),
-  });
-
-  addLog_('edit', cleanId, cleanNote ? `#${cleanId} note saved` : `#${cleanId} note cleared`);
-}
-
-function addDevice_(barcode, serial) {
-  const sheet = getSheet_(DEVICES_SHEET);
-  const devices = getDeviceRows_();
-  const nextId = devices.reduce((max, item) => Math.max(max, Number(item.device.ID) || 0), 0) + 1;
-  const cleanBarcode = String(barcode || '').trim() || `BC-${String(nextId).padStart(6, '0')}`;
-  const cleanSerial = String(serial || '').trim() || `CB-${String(nextId).padStart(6, '0')}`;
-
-  const barcodeDuplicate = devices.find(item =>
-    String(item.device.Barcode || '').toLowerCase() === cleanBarcode.toLowerCase()
-  );
-  if (barcodeDuplicate) {
-    throw new Error(`Chromebook #${barcodeDuplicate.device.ID} already uses that barcode.`);
-  }
-
-  const serialDuplicate = devices.find(item =>
-    String(item.device.Serial || '').toLowerCase() === cleanSerial.toLowerCase()
-  );
-  if (serialDuplicate) {
-    throw new Error(`Chromebook #${serialDuplicate.device.ID} already uses that serial.`);
-  }
-
-  const now = new Date();
-  sheet.appendRow([
-    nextId,
-    cleanBarcode,
-    cleanSerial,
-    false,
-    '',
-    '',
-    now,
-    '',
-  ]);
-
-  addLog_('edit', nextId, `#${nextId} (${cleanBarcode} / ${cleanSerial}) added to inventory`);
-}
-
 function clearLog_() {
   const sheet = getSheet_(LOG_SHEET);
   sheet.clear();
@@ -255,7 +197,6 @@ function getState_() {
       checkedOut: toBoolean_(device.CheckedOut),
       studentId: device.StudentID ? String(device.StudentID) : null,
       checkoutTime: device.CheckoutTime ? new Date(device.CheckoutTime).toISOString() : null,
-      notes: String(device.Notes || ''),
       log: logs
         .filter(entry => Number(entry.DeviceID) === id)
         .map(logToFrontend_),
@@ -272,7 +213,7 @@ function setupSpreadsheet_() {
   const devices = getSheet_(DEVICES_SHEET);
   const logs = getSheet_(LOG_SHEET);
 
-  ensureHeaders_(devices, ['ID', 'Barcode', 'Serial', 'CheckedOut', 'StudentID', 'CheckoutTime', 'UpdatedAt', 'Notes']);
+  ensureHeaders_(devices, ['ID', 'Barcode', 'Serial', 'CheckedOut', 'StudentID', 'CheckoutTime', 'UpdatedAt']);
   ensureHeaders_(logs, ['Timestamp', 'Type', 'DeviceID', 'Message']);
 
   if (devices.getLastRow() < 2) {
@@ -287,7 +228,6 @@ function setupSpreadsheet_() {
         '',
         '',
         now,
-        '',
       ]);
     }
     devices.getRange(2, 1, rows.length, rows[0].length).setValues(rows);

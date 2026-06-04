@@ -148,14 +148,14 @@
     <section class="modal-box" aria-labelledby="modal-title">
       <button class="modal-close" type="button" onclick="closeModal('action-modal')" aria-label="Close">X</button>
       <h2 class="modal-title" id="modal-title">CHECK OUT</h2>
-      <p class="modal-desc" id="modal-desc">Assign a Chromebook to a student.</p>
+      <p class="modal-desc" id="modal-desc">Assign a Chromebook number, barcode, or serial to a student.</p>
 
       <div id="checkout-fields">
         <div class="field-group">
-          <label for="co-serial">CHROMEBOOK BARCODE OR SERIAL #</label>
+          <label for="co-serial">CHROMEBOOK #, BARCODE, OR SERIAL</label>
           <div class="scan-input-row">
-            <input type="text" id="co-serial" placeholder="" autocomplete="off" autocapitalize="characters" inputmode="text" />
-            <button class="btn-scan" type="button" onclick="openScanner('co-serial', 'Chromebook barcode')">
+            <input type="text" id="co-serial" placeholder="16, Chromebook 16, BC-000016, or CB-000016" autocomplete="off" autocapitalize="characters" inputmode="text" />
+            <button class="btn-scan" type="button" onclick="openScanner('co-serial', 'Chromebook barcode or serial')">
               <span aria-hidden="true">▦</span>
               <span>SCAN</span>
             </button>
@@ -175,10 +175,10 @@
 
       <div id="checkin-fields" class="hidden">
         <div class="field-group">
-          <label for="ci-student">STUDENT ID</label>
+          <label for="ci-student">STUDENT ID OR CHROMEBOOK #</label>
           <div class="scan-input-row">
-            <input type="text" id="ci-student" placeholder="" autocomplete="off" autocapitalize="none" inputmode="numeric" />
-            <button class="btn-scan" type="button" onclick="openScanner('ci-student', 'Student ID')">
+            <input type="text" id="ci-student" placeholder="Student ID, 16, or Chromebook 16" autocomplete="off" autocapitalize="none" inputmode="text" />
+            <button class="btn-scan" type="button" onclick="openScanner('ci-student', 'Student ID or Chromebook number')">
               <span aria-hidden="true">▦</span>
               <span>SCAN</span>
             </button>

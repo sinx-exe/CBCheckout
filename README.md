@@ -94,6 +94,12 @@ No private keys or secrets are needed. The frontend only knows the public Web Ap
 
 The app polls the Google Sheet every 10 seconds. Apps Script is simple and free, but it is not instant push sync.
 
+## Checkout / Check-In Lookup
+
+For checkout, the Chromebook field accepts the device number, barcode, or serial. Examples: `16`, `Chromebook 16`, `BC-000016`, or `CB-000016`.
+
+For check-in, the lookup field accepts either the Student ID or the Chromebook number.
+
 ## Camera Notes
 
 - Barcode scanning works best in Chrome or Edge.
