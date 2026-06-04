@@ -5,7 +5,7 @@
 const TOTAL = 32;
 const CREDS = { username: "username", password: "password" };
 const STORAGE_KEY = 'cbcheckout-state-v1';
-const LOGIN_USER_KEY = 'cbcheckout-currentUser';
+const LOGIN_KEY = 'cbcheckout-logged-in';
 
 // Paste your deployed Google Apps Script Web App URL here.
 // It should look like:
@@ -25,7 +25,6 @@ let scannerAnimationId = null;
 let scannerActive = false;
 let sheetConnected = false;
 let syncTimer = null;
-let loggedInUser = null;
 
 const initialState = loadSavedState();
 const chromebooks = initialState.chromebooks;
@@ -45,7 +44,6 @@ function createDefaultChromebooks() {
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
-  loadLoggedInUser();
   renderGrid();
   updateStats();
   renderLog();
@@ -63,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  loadSavedLogin();
   window.addEventListener('storage', syncStateFromStorage);
 });
 
@@ -74,8 +73,7 @@ function doLogin() {
 
   if (user === CREDS.username && pass === CREDS.password) {
     isLoggedIn = true;
-    loggedInUser = user;
-    saveLoggedInUser();
+    saveLogin();
     document.getElementById('login-overlay').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     document.getElementById('logged-in-user').textContent = user;
@@ -88,47 +86,45 @@ function doLogin() {
 
 function doLogout() {
   isLoggedIn = false;
-  loggedInUser = null;
-  clearLoggedInUser();
-  isLoggedIn = false;
+  clearLogin();
   closeScanner();
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login-overlay').classList.remove('hidden');
   document.getElementById('login-username').value = '';
   document.getElementById('login-password').value = '';
+  document.getElementById('logged-in-user').textContent = 'username';
   document.getElementById('login-error').classList.add('hidden');
   closeModal('action-modal');
   closeModal('device-modal');
 }
 
-function saveLoggedInUser() {
+function saveLogin() {
   try {
-    localStorage.setItem(LOGIN_USER_KEY, loggedInUser || '');
+    localStorage.setItem(LOGIN_KEY, 'true');
   } catch (err) {
-    // ignore storage errors
+    // ignore if storage is unavailable
   }
 }
 
-function clearLoggedInUser() {
+function clearLogin() {
   try {
-    localStorage.removeItem(LOGIN_USER_KEY);
+    localStorage.removeItem(LOGIN_KEY);
   } catch (err) {
-    // ignore storage errors
+    // ignore if storage is unavailable
   }
 }
 
-function loadLoggedInUser() {
+function loadSavedLogin() {
   try {
-    const storedUser = localStorage.getItem(LOGIN_USER_KEY);
-    if (storedUser === CREDS.username) {
-      loggedInUser = storedUser;
+    const saved = localStorage.getItem(LOGIN_KEY);
+    if (saved === 'true') {
       isLoggedIn = true;
       document.getElementById('login-overlay').classList.add('hidden');
       document.getElementById('app').classList.remove('hidden');
-      document.getElementById('logged-in-user').textContent = storedUser;
+      document.getElementById('logged-in-user').textContent = CREDS.username;
     }
   } catch (err) {
-    // ignore storage errors
+    // ignore if storage is unavailable
   }
 }
 
