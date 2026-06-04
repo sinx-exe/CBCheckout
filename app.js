@@ -5,6 +5,7 @@
 const TOTAL = 32;
 const CREDS = { username: "username", password: "password" };
 const STORAGE_KEY = 'cbcheckout-state-v1';
+const LOGIN_USER_KEY = 'cbcheckout-currentUser';
 
 // Paste your deployed Google Apps Script Web App URL here.
 // It should look like:
@@ -24,6 +25,7 @@ let scannerAnimationId = null;
 let scannerActive = false;
 let sheetConnected = false;
 let syncTimer = null;
+let loggedInUser = null;
 
 const initialState = loadSavedState();
 const chromebooks = initialState.chromebooks;
@@ -43,6 +45,7 @@ function createDefaultChromebooks() {
 
 // ── INIT ──
 document.addEventListener('DOMContentLoaded', () => {
+  loadLoggedInUser();
   renderGrid();
   updateStats();
   renderLog();
@@ -71,6 +74,8 @@ function doLogin() {
 
   if (user === CREDS.username && pass === CREDS.password) {
     isLoggedIn = true;
+    loggedInUser = user;
+    saveLoggedInUser();
     document.getElementById('login-overlay').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     document.getElementById('logged-in-user').textContent = user;
@@ -83,6 +88,9 @@ function doLogin() {
 
 function doLogout() {
   isLoggedIn = false;
+  loggedInUser = null;
+  clearLoggedInUser();
+  isLoggedIn = false;
   closeScanner();
   document.getElementById('app').classList.add('hidden');
   document.getElementById('login-overlay').classList.remove('hidden');
@@ -91,6 +99,37 @@ function doLogout() {
   document.getElementById('login-error').classList.add('hidden');
   closeModal('action-modal');
   closeModal('device-modal');
+}
+
+function saveLoggedInUser() {
+  try {
+    localStorage.setItem(LOGIN_USER_KEY, loggedInUser || '');
+  } catch (err) {
+    // ignore storage errors
+  }
+}
+
+function clearLoggedInUser() {
+  try {
+    localStorage.removeItem(LOGIN_USER_KEY);
+  } catch (err) {
+    // ignore storage errors
+  }
+}
+
+function loadLoggedInUser() {
+  try {
+    const storedUser = localStorage.getItem(LOGIN_USER_KEY);
+    if (storedUser === CREDS.username) {
+      loggedInUser = storedUser;
+      isLoggedIn = true;
+      document.getElementById('login-overlay').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+      document.getElementById('logged-in-user').textContent = storedUser;
+    }
+  } catch (err) {
+    // ignore storage errors
+  }
 }
 
 // ── THEME ──
