@@ -38,8 +38,8 @@ function createDefaultChromebooks() {
     checkedOut: false,
     studentId: null,
     checkoutTime: null,
-    log: [],
     notes: '',
+    log: [],
   }));
 }
 
@@ -136,10 +136,14 @@ function renderGrid() {
       ? `#${cb.id} – Checked out by ${cb.studentId}`
       : `#${cb.id} – Available`
     );
+    let noteIndicator = '';
+    if (cb.notes && cb.notes.trim()) {
+      noteIndicator = '<div class="note-indicator" title="This device has notes"></div>';
+    }
     btn.innerHTML = `
+      ${noteIndicator}
       <span class="cb-num">${String(cb.id).padStart(2, '0')}</span>
       <span class="cb-status-dot"></span>
-      ${cb.notes ? '<div class="cb-note-badge"></div>' : ''}
     `;
     btn.addEventListener('click', () => openDeviceModal(cb.id));
     grid.appendChild(btn);
@@ -449,10 +453,12 @@ function openDeviceModal(id) {
     document.getElementById(btnId).style.display = isLoggedIn ? '' : 'none';
   });
 
+  renderDeviceNotes(cb);
+
   cancelEdit('barcode');
   cancelEdit('serial');
+  cancelEditNotes();
 
-  renderNotes(cb);
   renderDeviceLog(cb);
 
   document.getElementById('device-modal').classList.remove('hidden');
@@ -520,90 +526,6 @@ function cancelEdit(field) {
   if (valueEl) valueEl.style.display = '';
   if (editBtn) editBtn.style.display = isLoggedIn ? '' : 'none';
   if (editDiv) editDiv.classList.add('hidden');
-}
-
-// ── NOTES ──
-function renderNotes(cb) {
-  const container = document.getElementById('dm-notes-content');
-  const textArea = document.getElementById('dm-notes-textarea');
-  const editBtn = document.getElementById('dm-notes-edit-btn');
-  
-  if (!container) return;
-  
-  if (!isLoggedIn) {
-    editBtn.style.display = 'none';
-    container.innerHTML = `<div class="note-text">${cb.notes ? escapeHtml(cb.notes) : '<span class="note-empty">No notes</span>'}</div>`;
-    return;
-  }
-  
-  editBtn.style.display = '';
-  
-  if (textArea.classList.contains('hidden')) {
-    container.innerHTML = `<div class="note-text">${cb.notes ? escapeHtml(cb.notes) : '<span class="note-empty">No notes</span>'}</div>`;
-  } else {
-    textArea.value = cb.notes;
-  }
-}
-
-function editNotes() {
-  if (!isLoggedIn) return;
-  const textArea = document.getElementById('dm-notes-textarea');
-  const container = document.getElementById('dm-notes-content');
-  const editBtn = document.getElementById('dm-notes-edit-btn');
-  const saveBtn = document.getElementById('dm-notes-save-btn');
-  const cancelBtn = document.getElementById('dm-notes-cancel-btn');
-  const actionsDiv = document.getElementById('dm-notes-actions');
-  
-  editBtn.classList.add('hidden');
-  textArea.classList.remove('hidden');
-  actionsDiv.classList.remove('hidden');
-  saveBtn.classList.remove('hidden');
-  cancelBtn.classList.remove('hidden');
-  container.classList.add('hidden');
-  textArea.focus();
-}
-
-function cancelEditNotes() {
-  const textArea = document.getElementById('dm-notes-textarea');
-  const container = document.getElementById('dm-notes-content');
-  const editBtn = document.getElementById('dm-notes-edit-btn');
-  const actionsDiv = document.getElementById('dm-notes-actions');
-  const cb = chromebooks.find(c => c.id === openDeviceIndex);
-  
-  editBtn.classList.remove('hidden');
-  textArea.classList.add('hidden');
-  actionsDiv.classList.add('hidden');
-  container.classList.remove('hidden');
-  
-  if (cb) renderNotes(cb);
-}
-
-async function saveNotes() {
-  if (!isLoggedIn) return;
-  const cb = chromebooks.find(c => c.id === openDeviceIndex);
-  if (!cb) return;
-  const textArea = document.getElementById('dm-notes-textarea');
-  const notes = textArea.value.trim();
-  
-  showGlobalLoading();
-  
-  try {
-    const nextState = await scriptRequest('updateDevice', {
-      id: cb.id,
-      field: 'notes',
-      value: notes,
-    });
-    applyState(nextState, { persist: true });
-    
-    const updatedCb = chromebooks.find(c => c.id === openDeviceIndex);
-    if (updatedCb) renderNotes(updatedCb);
-    cancelEditNotes();
-    hideGlobalLoading();
-  } catch (err) {
-    hideGlobalLoading();
-    setSyncStatus(false);
-    showModalError(err.message || 'Unable to save notes.');
-  }
 }
 
 // ── ACTIVITY LOG ──
@@ -854,6 +776,7 @@ function syncStateFromStorage(e) {
 function reviveChromebook(cb) {
   return {
     ...cb,
+    notes: cb.notes || '',
     checkoutTime: cb.checkoutTime ? new Date(cb.checkoutTime) : null,
     log: Array.isArray(cb.log) ? cb.log.map(reviveLogEntry) : [],
   };
@@ -864,6 +787,67 @@ function serializeLogEntry(entry) {
     ...entry,
     time: entry.time ? entry.time.toISOString() : null,
   };
+}
+
+// ── NOTES ──
+function renderDeviceNotes(cb) {
+  const container = document.getElementById('dm-notes-display');
+  const editDiv = document.getElementById('dm-notes-edit');
+  const notesText = document.getElementById('dm-notes-text');
+  const editBtn = document.getElementById('dm-notes-edit-btn');
+
+  if (!container || !notesText || !editBtn) return;
+
+  if (cb.notes && cb.notes.trim()) {
+    notesText.textContent = cb.notes;
+    container.style.display = '';
+  } else {
+    container.style.display = 'none';
+  }
+
+  editBtn.style.display = isLoggedIn ? '' : 'none';
+  if (editDiv) editDiv.classList.add('hidden');
+}
+
+function editNotes() {
+  if (!isLoggedIn) return;
+  const cb = chromebooks.find(c => c.id === openDeviceIndex);
+  if (!cb) return;
+
+  const container = document.getElementById('dm-notes-display');
+  const editDiv = document.getElementById('dm-notes-edit');
+  const textarea = document.getElementById('dm-notes-textarea');
+  const editBtn = document.getElementById('dm-notes-edit-btn');
+
+  textarea.value = cb.notes;
+  if (container) container.style.display = 'none';
+  if (editBtn) editBtn.style.display = 'none';
+  if (editDiv) editDiv.classList.remove('hidden');
+  textarea.focus();
+}
+
+async function saveNotes() {
+  if (!isLoggedIn) return;
+  const cb = chromebooks.find(c => c.id === openDeviceIndex);
+  if (!cb) return;
+
+  const textarea = document.getElementById('dm-notes-textarea');
+  const val = textarea.value.trim();
+
+  cb.notes = val;
+  renderDeviceNotes(cb);
+  persistState();
+  renderGrid();
+}
+
+function cancelEditNotes() {
+  const container = document.getElementById('dm-notes-display');
+  const editDiv = document.getElementById('dm-notes-edit');
+  const editBtn = document.getElementById('dm-notes-edit-btn');
+
+  if (container) container.style.display = '';
+  if (editBtn) editBtn.style.display = isLoggedIn ? '' : 'none';
+  if (editDiv) editDiv.classList.add('hidden');
 }
 
 function reviveLogEntry(entry) {
