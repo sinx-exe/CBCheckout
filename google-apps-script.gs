@@ -8,7 +8,7 @@
 
   Spreadsheet tabs created/used by this script:
   1. Devices
-     ID | Barcode | Serial | CheckedOut | StudentID | CheckoutTime | UpdatedAt
+     ID | Barcode | Serial | CheckedOut | StudentID | CheckoutTime | UpdatedAt | Notes
   2. ActivityLog
      Timestamp | Type | DeviceID | Message
 */
@@ -67,6 +67,10 @@ function doPost(e) {
       checkin_(body.studentId);
     } else if (action === 'updateDevice') {
       updateDevice_(body.id, body.field, body.value);
+    } else if (action === 'updateNote') {
+      updateNote_(body.id, body.note);
+    } else if (action === 'addDevice') {
+      addDevice_(body.barcode, body.serial);
     } else if (action === 'clearLog') {
       clearLog_();
     } else {
@@ -91,12 +95,12 @@ function checkout_(deviceCode, studentId) {
   const cleanStudentId = String(studentId || '').trim();
 
   if (!cleanDeviceCode || !cleanStudentId) {
-    throw new Error('Please fill in both Chromebook barcode/serial and Student ID.');
+    throw new Error('Please fill in both Chromebook number/barcode/serial and Student ID.');
   }
 
   const match = findDeviceByCode_(cleanDeviceCode);
   if (!match) {
-    throw new Error(`No Chromebook found with barcode or serial "${cleanDeviceCode}".`);
+    throw new Error(`No Chromebook found with number, barcode, or serial "${cleanDeviceCode}".`);
   }
 
   const device = match.device;
@@ -115,25 +119,28 @@ function checkout_(deviceCode, studentId) {
   addLog_(
     'checkout',
     device.ID,
-    `#${device.ID} (${device.Barcode} / ${device.Serial}) checked out to Student ${cleanStudentId}`
+    `Chromebook ${device.ID} checked out to Student ${cleanStudentId}`
   );
 }
 
-function checkin_(studentId) {
-  const cleanStudentId = String(studentId || '').trim();
-  if (!cleanStudentId) throw new Error('Please enter a Student ID.');
+function checkin_(studentOrDeviceCode) {
+  const cleanLookup = String(studentOrDeviceCode || '').trim();
+  if (!cleanLookup) throw new Error('Please enter a Student ID or Chromebook number.');
 
   const devices = getDeviceRows_();
-  const match = devices.find(item =>
+  const studentMatch = devices.find(item =>
     toBoolean_(item.device.CheckedOut) &&
-    String(item.device.StudentID || '').toLowerCase() === cleanStudentId.toLowerCase()
+    String(item.device.StudentID || '').toLowerCase() === cleanLookup.toLowerCase()
   );
+  const deviceMatch = findDeviceByCode_(cleanLookup);
+  const match = studentMatch || (deviceMatch && toBoolean_(deviceMatch.device.CheckedOut) ? deviceMatch : null);
 
   if (!match) {
-    throw new Error(`No Chromebook found checked out to Student ID "${cleanStudentId}".`);
+    throw new Error(`No checked-out Chromebook found for "${cleanLookup}".`);
   }
 
   const device = match.device;
+  const checkedOutStudentId = String(device.StudentID || '');
   const now = new Date();
   updateDeviceRow_(match.rowNumber, {
     CheckedOut: false,
@@ -142,7 +149,7 @@ function checkin_(studentId) {
     UpdatedAt: now,
   });
 
-  addLog_('checkin', device.ID, `#${device.ID} (${device.Serial}) returned by Student ${cleanStudentId}`);
+  addLog_('checkin', device.ID, `Chromebook ${device.ID} checked in from Student ${checkedOutStudentId || cleanLookup}`);
 }
 
 function updateDevice_(id, field, value) {
@@ -178,6 +185,60 @@ function updateDevice_(id, field, value) {
   addLog_('edit', cleanId, `#${cleanId} ${cleanField} changed: "${oldValue}" -> "${cleanValue}"`);
 }
 
+function updateNote_(id, note) {
+  const cleanId = Number(id);
+  const cleanNote = String(note || '').trim();
+
+  if (!cleanId) throw new Error('Missing Chromebook ID.');
+
+  const devices = getDeviceRows_();
+  const match = devices.find(item => Number(item.device.ID) === cleanId);
+  if (!match) throw new Error('Chromebook not found.');
+
+  updateDeviceRow_(match.rowNumber, {
+    Notes: cleanNote,
+    UpdatedAt: new Date(),
+  });
+
+  addLog_('edit', cleanId, cleanNote ? `#${cleanId} note saved` : `#${cleanId} note cleared`);
+}
+
+function addDevice_(barcode, serial) {
+  const sheet = getSheet_(DEVICES_SHEET);
+  const devices = getDeviceRows_();
+  const nextId = devices.reduce((max, item) => Math.max(max, Number(item.device.ID) || 0), 0) + 1;
+  const cleanBarcode = String(barcode || '').trim() || `BC-${String(nextId).padStart(6, '0')}`;
+  const cleanSerial = String(serial || '').trim() || `CB-${String(nextId).padStart(6, '0')}`;
+
+  const barcodeDuplicate = devices.find(item =>
+    String(item.device.Barcode || '').toLowerCase() === cleanBarcode.toLowerCase()
+  );
+  if (barcodeDuplicate) {
+    throw new Error(`Chromebook #${barcodeDuplicate.device.ID} already uses that barcode.`);
+  }
+
+  const serialDuplicate = devices.find(item =>
+    String(item.device.Serial || '').toLowerCase() === cleanSerial.toLowerCase()
+  );
+  if (serialDuplicate) {
+    throw new Error(`Chromebook #${serialDuplicate.device.ID} already uses that serial.`);
+  }
+
+  const now = new Date();
+  sheet.appendRow([
+    nextId,
+    cleanBarcode,
+    cleanSerial,
+    false,
+    '',
+    '',
+    now,
+    '',
+  ]);
+
+  addLog_('edit', nextId, `#${nextId} (${cleanBarcode} / ${cleanSerial}) added to inventory`);
+}
+
 function clearLog_() {
   const sheet = getSheet_(LOG_SHEET);
   sheet.clear();
@@ -197,6 +258,7 @@ function getState_() {
       checkedOut: toBoolean_(device.CheckedOut),
       studentId: device.StudentID ? String(device.StudentID) : null,
       checkoutTime: device.CheckoutTime ? new Date(device.CheckoutTime).toISOString() : null,
+      notes: String(device.Notes || ''),
       log: logs
         .filter(entry => Number(entry.DeviceID) === id)
         .map(logToFrontend_),
@@ -213,7 +275,7 @@ function setupSpreadsheet_() {
   const devices = getSheet_(DEVICES_SHEET);
   const logs = getSheet_(LOG_SHEET);
 
-  ensureHeaders_(devices, ['ID', 'Barcode', 'Serial', 'CheckedOut', 'StudentID', 'CheckoutTime', 'UpdatedAt']);
+  ensureHeaders_(devices, ['ID', 'Barcode', 'Serial', 'CheckedOut', 'StudentID', 'CheckoutTime', 'UpdatedAt', 'Notes']);
   ensureHeaders_(logs, ['Timestamp', 'Type', 'DeviceID', 'Message']);
 
   if (devices.getLastRow() < 2) {
@@ -228,6 +290,7 @@ function setupSpreadsheet_() {
         '',
         '',
         now,
+        '',
       ]);
     }
     devices.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
@@ -250,6 +313,10 @@ function getSheet_(name) {
 }
 
 function ensureHeaders_(sheet, headers) {
+  if (sheet.getMaxColumns() < headers.length) {
+    sheet.insertColumnsAfter(sheet.getMaxColumns(), headers.length - sheet.getMaxColumns());
+  }
+
   const existing = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
   const needsHeaders = headers.some((header, index) => existing[index] !== header);
   if (needsHeaders) {
@@ -283,10 +350,19 @@ function getLogs_() {
 
 function findDeviceByCode_(code) {
   const normalized = String(code || '').trim().toLowerCase();
+  const deviceNumber = parseChromebookNumber_(normalized);
+
   return getDeviceRows_().find(item =>
+    Number(item.device.ID) === deviceNumber ||
     String(item.device.Barcode || '').toLowerCase() === normalized ||
     String(item.device.Serial || '').toLowerCase() === normalized
   );
+}
+
+function parseChromebookNumber_(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  const match = normalized.match(/^(?:chromebook|chrome\s*book|cb|#)?\s*#?\s*(\d+)$/);
+  return match ? Number(match[1]) : null;
 }
 
 function updateDeviceRow_(rowNumber, changes) {
