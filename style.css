@@ -424,6 +424,84 @@ textarea {
   margin-top: 5px;
 }
 
+/* ── OUT REPORT ── */
+.report-section {
+  margin-bottom: 32px;
+}
+
+.report-count {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid var(--red);
+  border-radius: 20px;
+  padding: 5px 11px;
+  color: var(--red);
+  background: var(--red-dim);
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.report-table {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.74rem;
+}
+
+.report-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 190px 1fr;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 11px 16px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.report-row:last-child {
+  border-bottom: none;
+}
+
+.report-head {
+  background: var(--bg3);
+  color: var(--text2);
+  font-family: 'Lexend Deca', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.report-item {
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.report-item:hover {
+  background: var(--red-dim);
+}
+
+.report-device {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.report-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text3);
+  letter-spacing: 0.04em;
+}
+
 /* ── GRID SECTION ── */
 .grid-section {
   margin-bottom: 32px;
@@ -1187,6 +1265,31 @@ textarea {
   .stat-label {
     font-size: 0.56rem;
     letter-spacing: 0.08em;
+  }
+
+  .report-section {
+    margin-bottom: 22px;
+  }
+
+  .report-count {
+    min-height: 34px;
+  }
+
+  .report-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    padding: 12px;
+  }
+
+  .report-head {
+    display: none;
+  }
+
+  .report-item span:nth-child(3),
+  .report-item span:nth-child(4) {
+    grid-column: 1 / -1;
+    color: var(--text2);
+    overflow-wrap: anywhere;
   }
 
   .grid-section {

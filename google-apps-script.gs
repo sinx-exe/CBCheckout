@@ -8,9 +8,11 @@
 
   Spreadsheet tabs created/used by this script:
   1. Devices
-     ID | Barcode | Serial | CheckedOut | StudentID | CheckoutTime | UpdatedAt | Notes
+     ID | Barcode | Serial | Status | StudentID | CheckoutTime | UpdatedAt | Notes
   2. ActivityLog
      Timestamp | Type | DeviceID | Message
+  3. OUT
+     ID | Barcode | Serial | StudentID | CheckoutTime | Notes
 */
 
 const TOTAL_DEVICES = 32;
@@ -21,7 +23,8 @@ const SPREADSHEET_ID = '19mq5Y_fighXt1KX3oO7LhST142hJdfh0yDIXAcN7waY';
 
 const DEVICES_SHEET = 'Devices';
 const LOG_SHEET = 'ActivityLog';
-const BACKEND_VERSION = 'notes-sync-2026-06-04-v2';
+const OUT_SHEET = 'OUT';
+const BACKEND_VERSION = 'out-report-status-2026-06-04-v1';
 
 function doGet(e) {
   try {
@@ -34,6 +37,7 @@ function doGet(e) {
     }
 
     if (action === 'setup') {
+      updateOutSheet_();
       return json_({
         ok: true,
         version: BACKEND_VERSION,
@@ -56,6 +60,7 @@ function doGet(e) {
 // headers, and default Chromebook rows.
 function setupSpreadsheet() {
   setupSpreadsheet_();
+  updateOutSheet_();
 }
 
 function doPost(e) {
@@ -83,6 +88,7 @@ function doPost(e) {
       throw new Error('Unknown POST action.');
     }
 
+    updateOutSheet_();
     return json_({ ok: true, version: BACKEND_VERSION, state: getState_() });
   } catch (err) {
     return json_({ ok: false, error: err.message });
@@ -110,13 +116,13 @@ function checkout_(deviceCode, studentId) {
   }
 
   const device = match.device;
-  if (toBoolean_(device.CheckedOut)) {
+  if (isDeviceOut_(device)) {
     throw new Error(`Chromebook #${device.ID} is already checked out.`);
   }
 
   const now = new Date();
   updateDeviceRow_(match.rowNumber, {
-    CheckedOut: true,
+    Status: 'out',
     StudentID: cleanStudentId,
     CheckoutTime: now,
     UpdatedAt: now,
@@ -135,11 +141,11 @@ function checkin_(studentOrDeviceCode) {
 
   const devices = getDeviceRows_();
   const studentMatch = devices.find(item =>
-    toBoolean_(item.device.CheckedOut) &&
+    isDeviceOut_(item.device) &&
     String(item.device.StudentID || '').toLowerCase() === cleanLookup.toLowerCase()
   );
   const deviceMatch = findDeviceByCode_(cleanLookup);
-  const match = studentMatch || (deviceMatch && toBoolean_(deviceMatch.device.CheckedOut) ? deviceMatch : null);
+  const match = studentMatch || (deviceMatch && isDeviceOut_(deviceMatch.device) ? deviceMatch : null);
 
   if (!match) {
     throw new Error(`No checked-out Chromebook found for "${cleanLookup}".`);
@@ -149,7 +155,7 @@ function checkin_(studentOrDeviceCode) {
   const checkedOutStudentId = String(device.StudentID || '');
   const now = new Date();
   updateDeviceRow_(match.rowNumber, {
-    CheckedOut: false,
+    Status: 'in',
     StudentID: '',
     CheckoutTime: '',
     UpdatedAt: now,
@@ -235,7 +241,7 @@ function addDevice_(barcode, serial) {
     nextId,
     cleanBarcode,
     cleanSerial,
-    false,
+    'in',
     '',
     '',
     now,
@@ -261,7 +267,7 @@ function getState_() {
       id,
       barcode: String(getDeviceValue_(device, 'Barcode') || ''),
       serial: String(getDeviceValue_(device, 'Serial') || ''),
-      checkedOut: toBoolean_(getDeviceValue_(device, 'CheckedOut')),
+      checkedOut: isDeviceOut_(device),
       studentId: getDeviceValue_(device, 'StudentID') ? String(getDeviceValue_(device, 'StudentID')) : null,
       checkoutTime: getDeviceValue_(device, 'CheckoutTime') ? new Date(getDeviceValue_(device, 'CheckoutTime')).toISOString() : null,
       notes: String(getDeviceValue_(device, 'Notes') || ''),
@@ -290,6 +296,7 @@ function getDebugInfo_() {
     devicesSheet: DEVICES_SHEET,
     headers,
     firstDataRow,
+    statusColumnIndex: headers.findIndex(header => normalizeHeader_(header) === normalizeHeader_('Status')) + 1,
     notesColumnIndex: headers.findIndex(header => normalizeHeader_(header) === normalizeHeader_('Notes')) + 1,
   };
 }
@@ -298,8 +305,10 @@ function setupSpreadsheet_() {
   const devices = getSheet_(DEVICES_SHEET);
   const logs = getSheet_(LOG_SHEET);
 
-  ensureHeaders_(devices, ['ID', 'Barcode', 'Serial', 'CheckedOut', 'StudentID', 'CheckoutTime', 'UpdatedAt', 'Notes']);
+  ensureHeaders_(devices, ['ID', 'Barcode', 'Serial', 'Status', 'StudentID', 'CheckoutTime', 'UpdatedAt', 'Notes']);
   ensureHeaders_(logs, ['Timestamp', 'Type', 'DeviceID', 'Message']);
+  ensureHeaders_(getSheet_(OUT_SHEET), ['ID', 'Barcode', 'Serial', 'StudentID', 'CheckoutTime', 'Notes']);
+  normalizeDeviceStatuses_();
 
   if (devices.getLastRow() < 2) {
     const now = new Date();
@@ -309,7 +318,7 @@ function setupSpreadsheet_() {
         i,
         `BC-${String(i).padStart(6, '0')}`,
         `CB-${String(i).padStart(6, '0')}`,
-        false,
+        'in',
         '',
         '',
         now,
@@ -318,6 +327,54 @@ function setupSpreadsheet_() {
     }
     devices.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
   }
+}
+
+function updateOutSheet_() {
+  const outSheet = getSheet_(OUT_SHEET);
+  const headers = ['ID', 'Barcode', 'Serial', 'StudentID', 'CheckoutTime', 'Notes'];
+  outSheet.clear();
+  outSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+  const rows = getDeviceRows_()
+    .filter(item => isDeviceOut_(item.device))
+    .map(item => {
+      const device = item.device;
+      return [
+        Number(getDeviceValue_(device, 'ID')),
+        String(getDeviceValue_(device, 'Barcode') || ''),
+        String(getDeviceValue_(device, 'Serial') || ''),
+        String(getDeviceValue_(device, 'StudentID') || ''),
+        getDeviceValue_(device, 'CheckoutTime') || '',
+        String(getDeviceValue_(device, 'Notes') || ''),
+      ];
+    });
+
+  if (rows.length > 0) {
+    outSheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+  }
+}
+
+function normalizeDeviceStatuses_() {
+  const sheet = getSheet_(DEVICES_SHEET);
+  if (sheet.getLastRow() < 2) return;
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const statusColumn = getColumnIndex_(headers, 'Status');
+  if (statusColumn < 1) return;
+
+  const statusRange = sheet.getRange(2, statusColumn, sheet.getLastRow() - 1, 1);
+  const values = statusRange.getValues();
+  let changed = false;
+
+  const normalized = values.map(row => {
+    const status = String(row[0] || '').trim().toLowerCase();
+    if (status === 'in' || status === 'out') return row;
+
+    changed = true;
+    return [toBoolean_(row[0]) ? 'out' : 'in'];
+  });
+
+  if (changed) statusRange.setValues(normalized);
 }
 
 function getSpreadsheet_() {
@@ -393,7 +450,7 @@ function updateDeviceRow_(rowNumber, changes) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
 
   Object.keys(changes).forEach(key => {
-    const columnIndex = headers.indexOf(key) + 1;
+    const columnIndex = getColumnIndex_(headers, key);
     if (columnIndex > 0) {
       sheet.getRange(rowNumber, columnIndex).setValue(changes[key]);
     }
@@ -415,8 +472,28 @@ function rowToObject_(headers, row) {
 
 function getDeviceValue_(device, fieldName) {
   const target = normalizeHeader_(fieldName);
+  if (target === normalizeHeader_('Status')) {
+    const statusValue = getDeviceValue_(device, 'StatusRaw');
+    if (statusValue !== '') return statusValue;
+    return getDeviceValue_(device, 'CheckedOut');
+  }
+  if (target === normalizeHeader_('StatusRaw')) {
+    const statusKey = Object.keys(device).find(header => normalizeHeader_(header) === normalizeHeader_('Status'));
+    return statusKey ? device[statusKey] : '';
+  }
   const key = Object.keys(device).find(header => normalizeHeader_(header) === target);
   return key ? device[key] : '';
+}
+
+function getColumnIndex_(headers, fieldName) {
+  const target = normalizeHeader_(fieldName);
+  const index = headers.findIndex(header => normalizeHeader_(header) === target);
+  return index + 1;
+}
+
+function isDeviceOut_(device) {
+  const status = String(getDeviceValue_(device, 'Status') || '').trim().toLowerCase();
+  return status === 'out' || status === 'true' || status === 'checkedout' || status === 'checked out';
 }
 
 function normalizeHeader_(header) {

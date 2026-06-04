@@ -47,6 +47,7 @@ function createDefaultChromebooks() {
 document.addEventListener('DOMContentLoaded', () => {
   renderGrid();
   updateStats();
+  renderOutReport();
   renderLog();
   connectSheet();
 
@@ -159,6 +160,41 @@ function updateStats() {
   const out = chromebooks.filter(c => c.checkedOut).length;
   document.getElementById('available-count').textContent = chromebooks.length - out;
   document.getElementById('checkedout-count').textContent = out;
+}
+
+// ── OUT REPORT ──
+function renderOutReport() {
+  const container = document.getElementById('out-report');
+  const countEl = document.getElementById('report-count');
+  if (!container || !countEl) return;
+
+  const outDevices = chromebooks
+    .filter(cb => cb.checkedOut)
+    .sort((a, b) => Number(a.id) - Number(b.id));
+
+  countEl.textContent = outDevices.length === 1 ? '1 OUT' : `${outDevices.length} OUT`;
+
+  if (outDevices.length === 0) {
+    container.innerHTML = '<div class="report-empty">No Chromebooks are currently checked out.</div>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="report-row report-head">
+      <span>CHROMEBOOK</span>
+      <span>STUDENT</span>
+      <span>CHECKED OUT</span>
+      <span>BARCODE</span>
+    </div>
+    ${outDevices.map(cb => `
+      <button class="report-row report-item" type="button" onclick="openDeviceModal(${Number(cb.id)})">
+        <span class="report-device">#${String(cb.id).padStart(2, '0')}</span>
+        <span>${escapeHtml(cb.studentId || '-')}</span>
+        <span>${formatDateTime(cb.checkoutTime)}</span>
+        <span>${escapeHtml(cb.barcode || '-')}</span>
+      </button>
+    `).join('')}
+  `;
 }
 
 // ── LOADING SPINNER ──
@@ -319,6 +355,7 @@ async function submitAction() {
     hideLoading();
     renderGrid();
     updateStats();
+    renderOutReport();
     closeModal('action-modal');
   } catch (err) {
     hideLoading();
@@ -824,6 +861,7 @@ function applyState(nextState, options = {}) {
 
   renderGrid();
   updateStats();
+  renderOutReport();
   renderLog();
 
   const deviceModal = document.getElementById('device-modal');
