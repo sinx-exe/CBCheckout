@@ -5,6 +5,7 @@
 const TOTAL = 32;
 const CREDS = { username: "username", password: "password" };
 const STORAGE_KEY = 'cbcheckout-state-v1';
+const LOGIN_KEY = 'cbcheckout-current-user';
 
 // Paste your deployed Google Apps Script Web App URL here.
 // It should look like:
@@ -48,6 +49,10 @@ document.addEventListener('DOMContentLoaded', () => {
   renderLog();
   connectSheet();
 
+  if (loadLogin()) {
+    showApp(CREDS.username);
+  }
+
   ['login-username', 'login-password'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => {
       if (e.key === 'Enter') doLogin();
@@ -70,10 +75,8 @@ function doLogin() {
   const err  = document.getElementById('login-error');
 
   if (user === CREDS.username && pass === CREDS.password) {
-    isLoggedIn = true;
-    document.getElementById('login-overlay').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    document.getElementById('logged-in-user').textContent = user;
+    saveLogin();
+    showApp(user);
     err.classList.add('hidden');
   } else {
     err.classList.remove('hidden');
@@ -82,6 +85,7 @@ function doLogin() {
 }
 
 function doLogout() {
+  clearLogin();
   isLoggedIn = false;
   closeScanner();
   document.getElementById('app').classList.add('hidden');
@@ -91,6 +95,25 @@ function doLogout() {
   document.getElementById('login-error').classList.add('hidden');
   closeModal('action-modal');
   closeModal('device-modal');
+}
+
+function showApp(user) {
+  isLoggedIn = true;
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('logged-in-user').textContent = user;
+}
+
+function loadLogin() {
+  return localStorage.getItem(LOGIN_KEY) === CREDS.username;
+}
+
+function saveLogin() {
+  localStorage.setItem(LOGIN_KEY, CREDS.username);
+}
+
+function clearLogin() {
+  localStorage.removeItem(LOGIN_KEY);
 }
 
 // ── THEME ──
