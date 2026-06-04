@@ -124,8 +124,11 @@
 
     <section class="grid-section">
       <div class="section-header">
-        <h2 class="section-title">DEVICE INVENTORY</h2>
-        <span class="section-hint">Click any device to view details</span>
+        <div>
+          <h2 class="section-title">DEVICE INVENTORY</h2>
+          <span class="section-hint">Click any device to view details</span>
+        </div>
+        <button class="btn-add-device" type="button" onclick="openAddDeviceModal()">ADD CHROMEBOOK</button>
       </div>
       <div class="chromebook-grid" id="chromebook-grid"></div>
     </section>
@@ -203,6 +206,16 @@
         </div>
       </div>
 
+      <div class="device-notes-section">
+        <div class="device-notes-header">
+          <h3 class="device-log-title">NOTES</h3>
+          <span class="device-notes-status" id="dm-notes-status">No note</span>
+        </div>
+        <textarea id="dm-notes-input" rows="4" placeholder="Add repair notes, charger issues, labels, or other Chromebook details."></textarea>
+        <div id="dm-notes-error" class="notes-error hidden"></div>
+        <button class="btn-save-notes" type="button" onclick="saveNotes()">SAVE NOTES</button>
+      </div>
+
       <div class="device-detail-grid">
         <div class="detail-row">
           <span class="detail-label">BARCODE</span>
@@ -260,6 +273,33 @@
           <div class="log-empty">No activity for this device yet.</div>
         </div>
       </div>
+    </section>
+  </div>
+
+  <div id="add-device-modal" class="modal-overlay hidden">
+    <section class="modal-box" aria-labelledby="add-device-title">
+      <button class="modal-close" type="button" onclick="closeModal('add-device-modal')" aria-label="Close">X</button>
+      <h2 class="modal-title" id="add-device-title">ADD CHROMEBOOK</h2>
+      <p class="modal-desc">Create a new device row in the shared Google Sheet. Leave a field blank to auto-generate it.</p>
+
+      <div class="field-group">
+        <label for="add-barcode">CHROMEBOOK BARCODE</label>
+        <div class="scan-input-row">
+          <input type="text" id="add-barcode" placeholder="Auto-generate if blank" autocomplete="off" autocapitalize="characters" inputmode="text" />
+          <button class="btn-scan" type="button" onclick="openScanner('add-barcode', 'Chromebook barcode')">
+            <span aria-hidden="true">▦</span>
+            <span>SCAN</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label for="add-serial">SERIAL</label>
+        <input type="text" id="add-serial" placeholder="Auto-generate if blank" autocomplete="off" autocapitalize="characters" inputmode="text" />
+      </div>
+
+      <div id="add-device-error" class="login-error hidden"></div>
+      <button class="btn-submit" id="add-device-submit" type="button" onclick="submitAddDevice()">ADD CHROMEBOOK</button>
     </section>
   </div>
 

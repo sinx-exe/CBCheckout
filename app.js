@@ -38,6 +38,7 @@ function createDefaultChromebooks() {
     checkedOut: false,
     studentId: null,
     checkoutTime: null,
+    notes: '',
     log: [],
   }));
 }
@@ -62,6 +63,12 @@ document.addEventListener('DOMContentLoaded', () => {
   ['co-serial', 'co-student', 'ci-student'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => {
       if (e.key === 'Enter') submitAction();
+    });
+  });
+
+  ['add-barcode', 'add-serial'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitAddDevice();
     });
   });
 
@@ -95,6 +102,7 @@ function doLogout() {
   document.getElementById('login-error').classList.add('hidden');
   closeModal('action-modal');
   closeModal('device-modal');
+  closeModal('add-device-modal');
 }
 
 function showApp(user) {
@@ -130,12 +138,14 @@ function renderGrid() {
   grid.innerHTML = '';
   chromebooks.forEach(cb => {
     const btn = document.createElement('button');
+    const hasNotes = Boolean((cb.notes || '').trim());
     btn.className = `cb-btn ${cb.checkedOut ? 'checked-out' : 'available'}`;
     btn.setAttribute('title', cb.checkedOut
-      ? `#${cb.id} – Checked out by ${cb.studentId}`
-      : `#${cb.id} – Available`
+      ? `#${cb.id} - Checked out by ${cb.studentId}${hasNotes ? ' - Has notes' : ''}`
+      : `#${cb.id} - Available${hasNotes ? ' - Has notes' : ''}`
     );
     btn.innerHTML = `
+      ${hasNotes ? '<span class="cb-note-corner" aria-hidden="true"></span>' : ''}
       <span class="cb-num">${String(cb.id).padStart(2, '0')}</span>
       <span class="cb-status-dot"></span>
     `;
@@ -147,7 +157,7 @@ function renderGrid() {
 // ── STATS ──
 function updateStats() {
   const out = chromebooks.filter(c => c.checkedOut).length;
-  document.getElementById('available-count').textContent = TOTAL - out;
+  document.getElementById('available-count').textContent = chromebooks.length - out;
   document.getElementById('checkedout-count').textContent = out;
 }
 
@@ -227,6 +237,43 @@ function openModal(type) {
 function closeModal(id) {
   if (id === 'action-modal') closeScanner();
   document.getElementById(id).classList.add('hidden');
+}
+
+// ── ADD CHROMEBOOK ──
+function openAddDeviceModal() {
+  if (!isLoggedIn) return;
+
+  document.getElementById('add-barcode').value = '';
+  document.getElementById('add-serial').value = '';
+  document.getElementById('add-device-error').classList.add('hidden');
+  document.getElementById('add-device-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('add-barcode').focus(), 100);
+}
+
+async function submitAddDevice() {
+  if (!isLoggedIn) return;
+
+  const errorEl = document.getElementById('add-device-error');
+  const submitBtn = document.getElementById('add-device-submit');
+  const barcode = document.getElementById('add-barcode').value.trim();
+  const serial = document.getElementById('add-serial').value.trim();
+
+  errorEl.classList.add('hidden');
+  submitBtn.disabled = true;
+  showGlobalLoading();
+
+  try {
+    const nextState = await scriptRequest('addDevice', { barcode, serial });
+    applyState(nextState, { persist: true });
+    closeModal('add-device-modal');
+  } catch (err) {
+    setSyncStatus(false);
+    errorEl.textContent = err.message || 'Unable to add Chromebook.';
+    errorEl.classList.remove('hidden');
+  } finally {
+    submitBtn.disabled = false;
+    hideGlobalLoading();
+  }
 }
 
 async function submitAction() {
@@ -421,6 +468,9 @@ function openDeviceModal(id) {
   document.getElementById('dm-title').textContent   = `CHROMEBOOK #${id}`;
   document.getElementById('dm-barcode').textContent = cb.barcode;
   document.getElementById('dm-serial').textContent  = cb.serial;
+  document.getElementById('dm-notes-input').value   = cb.notes || '';
+  document.getElementById('dm-notes-status').textContent = (cb.notes || '').trim() ? 'Saved note' : 'No note';
+  document.getElementById('dm-notes-error').classList.add('hidden');
 
   const pill = document.getElementById('dm-status-pill');
   if (cb.checkedOut) {
@@ -453,6 +503,42 @@ function openDeviceModal(id) {
   renderDeviceLog(cb);
 
   document.getElementById('device-modal').classList.remove('hidden');
+}
+
+async function saveNotes() {
+  if (!isLoggedIn) return;
+  const cb = chromebooks.find(c => c.id === openDeviceIndex);
+  if (!cb) return;
+
+  const input = document.getElementById('dm-notes-input');
+  const status = document.getElementById('dm-notes-status');
+  const error = document.getElementById('dm-notes-error');
+  const note = input.value.trim();
+
+  error.classList.add('hidden');
+  status.textContent = 'Saving...';
+  showGlobalLoading();
+
+  try {
+    const nextState = await scriptRequest('updateNote', {
+      id: cb.id,
+      note,
+    });
+    applyState(nextState, { persist: true });
+    const updatedCb = chromebooks.find(c => c.id === openDeviceIndex);
+    if (updatedCb) {
+      input.value = updatedCb.notes || '';
+      status.textContent = (updatedCb.notes || '').trim() ? 'Saved note' : 'No note';
+      renderDeviceLog(updatedCb);
+    }
+  } catch (err) {
+    setSyncStatus(false);
+    status.textContent = 'Save failed';
+    error.textContent = err.message || 'Unable to save notes.';
+    error.classList.remove('hidden');
+  } finally {
+    hideGlobalLoading();
+  }
 }
 
 // ── INLINE EDIT ──
@@ -685,15 +771,27 @@ function normalizeStatePayload(data) {
   };
 }
 
+function normalizeChromebookList(savedChromebooks) {
+  const defaults = createDefaultChromebooks();
+  const defaultById = new Map(defaults.map(cb => [Number(cb.id), cb]));
+  const source = Array.isArray(savedChromebooks) && savedChromebooks.length
+    ? savedChromebooks
+    : defaults;
+
+  return source
+    .map(cb => reviveChromebook({
+      ...(defaultById.get(Number(cb.id)) || {}),
+      ...cb,
+    }))
+    .sort((a, b) => Number(a.id) - Number(b.id));
+}
+
 function applyState(nextState, options = {}) {
   nextState = normalizeStatePayload(nextState);
   chromebooks.splice(
     0,
     chromebooks.length,
-    ...createDefaultChromebooks().map(defaultCb => reviveChromebook({
-      ...defaultCb,
-      ...(nextState.chromebooks || []).find(savedCb => savedCb.id === defaultCb.id),
-    }))
+    ...normalizeChromebookList(nextState.chromebooks)
   );
   activityLog.splice(
     0,
@@ -714,8 +812,7 @@ function applyState(nextState, options = {}) {
 }
 
 function loadSavedState() {
-  const defaults = createDefaultChromebooks();
-  const fallback = { chromebooks: defaults, activityLog: [] };
+  const fallback = { chromebooks: createDefaultChromebooks(), activityLog: [] };
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -723,10 +820,7 @@ function loadSavedState() {
 
     const parsed = JSON.parse(raw);
     return {
-      chromebooks: defaults.map(defaultCb => reviveChromebook({
-        ...defaultCb,
-        ...(parsed.chromebooks || []).find(savedCb => savedCb.id === defaultCb.id),
-      })),
+      chromebooks: normalizeChromebookList(parsed.chromebooks),
       activityLog: Array.isArray(parsed.activityLog)
         ? parsed.activityLog.map(reviveLogEntry)
         : [],
@@ -767,6 +861,8 @@ function syncStateFromStorage(e) {
 function reviveChromebook(cb) {
   return {
     ...cb,
+    id: Number(cb.id),
+    notes: String(cb.notes || ''),
     checkoutTime: cb.checkoutTime ? new Date(cb.checkoutTime) : null,
     log: Array.isArray(cb.log) ? cb.log.map(reviveLogEntry) : [],
   };
@@ -808,6 +904,7 @@ function escapeHtml(str) {
 document.addEventListener('click', (e) => {
   if (e.target.id === 'action-modal') closeModal('action-modal');
   if (e.target.id === 'device-modal') closeModal('device-modal');
+  if (e.target.id === 'add-device-modal') closeModal('add-device-modal');
   if (e.target.id === 'scanner-modal') closeScanner();
 });
 
@@ -816,5 +913,6 @@ document.addEventListener('keydown', (e) => {
     closeScanner();
     closeModal('action-modal');
     closeModal('device-modal');
+    closeModal('add-device-modal');
   }
 });

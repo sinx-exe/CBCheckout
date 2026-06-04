@@ -32,17 +32,17 @@ Create one Google Sheets spreadsheet. The script uses two tabs inside that one s
 
 ### Devices
 
-| ID | Barcode | Serial | CheckedOut | StudentID | CheckoutTime | UpdatedAt |
-| --- | --- | --- | --- | --- | --- | --- |
+| ID | Barcode | Serial | CheckedOut | StudentID | CheckoutTime | UpdatedAt | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
 
-Each row is one Chromebook. If the sheet is empty, the script creates 32 default rows like `BC-000001` and `CB-000001`.
+Each row is one Chromebook. If the sheet is empty, the script creates 32 default rows like `BC-000001` and `CB-000001`. New Chromebooks added in the app are appended here and notes are saved in the `Notes` column.
 
 ### ActivityLog
 
 | Timestamp | Type | DeviceID | Message |
 | --- | --- | --- | --- |
 
-Each checkout, check-in, or barcode/serial edit is logged here.
+Each checkout, check-in, barcode/serial edit, note update, or added Chromebook is logged here.
 
 You can create these tabs manually, or just run the Apps Script setup once and it will create the tabs and headers for you.
 
