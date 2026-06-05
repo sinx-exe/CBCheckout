@@ -990,6 +990,17 @@ button:disabled {
 }
 .detail-row:last-child { border-bottom: none; }
 
+.detail-row:has(.inline-edit:not(.hidden)) {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.detail-row:has(.inline-edit:not(.hidden)) .detail-label {
+  width: auto;
+  padding-top: 0;
+}
+
 .device-danger-section {
   display: flex;
   align-items: center;
@@ -1044,12 +1055,15 @@ button:disabled {
   gap: 10px;
   flex: 1;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .detail-value {
   font-family: 'Roboto Mono', monospace;
   font-size: 0.82rem;
   color: var(--text);
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .edit-icon-btn {
@@ -1066,17 +1080,22 @@ button:disabled {
 .edit-icon-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); transform: translateY(-1px); }
 
 .inline-edit {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, max-content);
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
+  width: 100%;
+  min-width: 0;
 }
 .inline-edit input {
-  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 34px;
   background: var(--bg3);
   border: 1px solid var(--accent);
   border-radius: 4px;
-  padding: 5px 10px;
+  padding: 6px 10px;
   color: var(--text);
   font-family: 'Roboto Mono', monospace;
   font-size: 0.8rem;
@@ -1086,10 +1105,14 @@ button:disabled {
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 5px 9px;
+  min-height: 34px;
+  padding: 6px 10px;
   color: var(--text2);
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
   transition: border-color 0.15s var(--ease), color 0.15s var(--ease), background 0.15s var(--ease), transform 0.15s var(--ease);
 }
 .inline-edit button:hover {
