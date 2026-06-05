@@ -13,6 +13,8 @@ const LOGIN_KEY = 'cbcheckout-current-user';
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuZNWZuWjo4CO3z-zVjQ2o2L39WCWRCC1vHCJOKnMspiKYuEo-W71bpUcQjM0j8_FA/exec';
 
 const SYNC_INTERVAL_MS = 10000;
+const UI_EXIT_MS = 220;
+const uiHideTimers = new WeakMap();
 
 // ── STATE ──
 let isLoggedIn = false;
@@ -205,7 +207,7 @@ function showLoading() {
   const errorEl = document.getElementById('modal-error');
   const submitBtn = document.getElementById('modal-submit-btn');
   
-  if (loadingEl) loadingEl.classList.remove('hidden');
+  if (loadingEl) showAnimatedElement(loadingEl, 'is-hiding');
   if (fieldsCheckout) fieldsCheckout.classList.add('hidden');
   if (fieldsCheckin) fieldsCheckin.classList.add('hidden');
   if (errorEl) errorEl.classList.add('hidden');
@@ -218,7 +220,7 @@ function hideLoading() {
   const fieldsCheckin = document.getElementById('checkin-fields');
   const submitBtn = document.getElementById('modal-submit-btn');
   
-  if (loadingEl) loadingEl.classList.add('hidden');
+  if (loadingEl) hideAnimatedElement(loadingEl, 'is-hiding', UI_EXIT_MS);
   
   if (currentAction === 'checkout') {
     if (fieldsCheckout) fieldsCheckout.classList.remove('hidden');
@@ -231,12 +233,12 @@ function hideLoading() {
 
 function showGlobalLoading() {
   const loadingEl = document.getElementById('global-loading');
-  if (loadingEl) loadingEl.classList.remove('hidden');
+  if (loadingEl) showAnimatedElement(loadingEl, 'is-hiding');
 }
 
 function hideGlobalLoading() {
   const loadingEl = document.getElementById('global-loading');
-  if (loadingEl) loadingEl.classList.add('hidden');
+  if (loadingEl) hideAnimatedElement(loadingEl, 'is-hiding', UI_EXIT_MS);
 }
 
 // ── ACTION MODAL ──
@@ -267,12 +269,36 @@ function openModal(type) {
     setTimeout(() => document.getElementById('ci-student').focus(), 100);
   }
 
-  document.getElementById('action-modal').classList.remove('hidden');
+  showAnimatedElement(document.getElementById('action-modal'), 'modal-closing');
 }
 
 function closeModal(id) {
   if (id === 'action-modal') closeScanner();
-  document.getElementById(id).classList.add('hidden');
+  hideAnimatedElement(document.getElementById(id), 'modal-closing', UI_EXIT_MS);
+}
+
+function showAnimatedElement(el, exitClass) {
+  if (!el) return;
+  const pendingTimer = uiHideTimers.get(el);
+  if (pendingTimer) {
+    window.clearTimeout(pendingTimer);
+    uiHideTimers.delete(el);
+  }
+  el.classList.remove(exitClass);
+  el.classList.remove('hidden');
+}
+
+function hideAnimatedElement(el, exitClass, delay = UI_EXIT_MS) {
+  if (!el || el.classList.contains('hidden')) return;
+  const pendingTimer = uiHideTimers.get(el);
+  if (pendingTimer) window.clearTimeout(pendingTimer);
+  el.classList.add(exitClass);
+  const timer = window.setTimeout(() => {
+    el.classList.add('hidden');
+    el.classList.remove(exitClass);
+    uiHideTimers.delete(el);
+  }, delay);
+  uiHideTimers.set(el, timer);
 }
 
 // ── ADD CHROMEBOOK ──
@@ -282,7 +308,7 @@ function openAddDeviceModal() {
   document.getElementById('add-barcode').value = '';
   document.getElementById('add-serial').value = '';
   document.getElementById('add-device-error').classList.add('hidden');
-  document.getElementById('add-device-modal').classList.remove('hidden');
+  showAnimatedElement(document.getElementById('add-device-modal'), 'modal-closing');
   setTimeout(() => document.getElementById('add-barcode').focus(), 100);
 }
 
@@ -414,7 +440,7 @@ async function openScanner(targetInputId, label) {
   title.textContent = `SCAN ${label.toUpperCase()}`;
   desc.textContent = `Point the camera at the ${label.toLowerCase()}.`;
   status.textContent = 'Starting camera...';
-  modal.classList.remove('hidden');
+  showAnimatedElement(modal, 'modal-closing');
 
   if (!('BarcodeDetector' in window)) {
     status.textContent = 'Barcode scanning is not supported in this browser. Try Chrome or Edge, or enter the value manually.';
@@ -506,7 +532,7 @@ function closeScanner() {
   const modal = document.getElementById('scanner-modal');
   const video = document.getElementById('scanner-video');
   if (video) video.srcObject = null;
-  if (modal) modal.classList.add('hidden');
+  if (modal) hideAnimatedElement(modal, 'modal-closing', UI_EXIT_MS);
 
   scannerDetector = null;
   scannerTargetInputId = null;
@@ -562,7 +588,7 @@ function openDeviceModal(id) {
 
   renderDeviceLog(cb);
 
-  document.getElementById('device-modal').classList.remove('hidden');
+  showAnimatedElement(document.getElementById('device-modal'), 'modal-closing');
 }
 
 async function saveNotes() {

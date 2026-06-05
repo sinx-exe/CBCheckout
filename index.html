@@ -167,7 +167,7 @@
         <div class="field-group">
           <label for="co-serial">CHROMEBOOK #, BARCODE, OR SERIAL</label>
           <div class="scan-input-row">
-            <input type="text" id="co-serial" placeholder="16, Chromebook 16, BC-000016, or CB-000016" autocomplete="off" autocapitalize="characters" inputmode="text" />
+            <input type="text" id="co-serial" placeholder="" autocomplete="off" autocapitalize="characters" inputmode="text" />
             <button class="btn-scan" type="button" onclick="openScanner('co-serial', 'Chromebook barcode or serial')">
               <span aria-hidden="true">▦</span>
               <span>SCAN</span>
@@ -190,7 +190,7 @@
         <div class="field-group">
           <label for="ci-student">STUDENT ID OR CHROMEBOOK #</label>
           <div class="scan-input-row">
-            <input type="text" id="ci-student" placeholder="Student ID, 16, or Chromebook 16" autocomplete="off" autocapitalize="none" inputmode="text" />
+            <input type="text" id="ci-student" placeholder="" autocomplete="off" autocapitalize="none" inputmode="text" />
             <button class="btn-scan" type="button" onclick="openScanner('ci-student', 'Student ID or Chromebook number')">
               <span aria-hidden="true">▦</span>
               <span>SCAN</span>
@@ -202,7 +202,7 @@
       <div id="modal-error" class="login-error hidden"></div>
       <div id="modal-loading" class="modal-loading hidden">
         <div class="spinner"></div>
-        <p>Syncing...</p>
+        <p>Syncing</p>
       </div>
       <button class="btn-submit" id="modal-submit-btn" type="button" onclick="submitAction()">SUBMIT</button>
     </section>
@@ -337,7 +337,7 @@
 
   <div class="global-loading hidden" id="global-loading">
     <div class="spinner"></div>
-    <p>Syncing...</p>
+    <p>Syncing</p>
   </div>
 </body>
 </html>

@@ -747,6 +747,15 @@ button:disabled {
   animation: fadeIn 0.18s var(--ease);
 }
 
+.modal-overlay.modal-closing {
+  animation: overlayOut 0.22s var(--ease) forwards;
+  pointer-events: none;
+}
+
+.modal-overlay.modal-closing .modal-box {
+  animation: modalOut 0.22s var(--ease) forwards;
+}
+
 .modal-box {
   background: var(--bg2);
   border: 1px solid var(--border2);
@@ -818,15 +827,32 @@ button:disabled {
   gap: 16px;
   padding: 40px 0;
   text-align: center;
+  animation: loaderIn 0.24s var(--ease);
+}
+
+.modal-loading.is-hiding {
+  animation: loaderOut 0.2s var(--ease) forwards;
 }
 
 .spinner {
   width: 48px;
   height: 48px;
-  border: 3px solid var(--border);
-  border-top-color: var(--accent);
+  position: relative;
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  background:
+    conic-gradient(from 0deg, transparent 0 28%, var(--accent) 42%, var(--green) 68%, transparent 82%),
+    color-mix(in srgb, var(--bg3) 86%, var(--accent) 14%);
+  box-shadow: 0 0 24px var(--accent-glow);
+  animation: spin 0.9s linear infinite, glowPulse 1.8s ease-in-out infinite;
+}
+
+.spinner::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--bg2);
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 @keyframes spin {
@@ -834,9 +860,19 @@ button:disabled {
 }
 
 .modal-loading p {
+  position: relative;
   font-size: 0.85rem;
   color: var(--text2);
   letter-spacing: 0.05em;
+}
+
+.modal-loading p::after,
+.global-loading p::after {
+  content: "";
+  display: inline-block;
+  width: 1.4em;
+  text-align: left;
+  animation: syncDots 1.2s steps(4, end) infinite;
 }
 
 .scanner-frame {
@@ -1199,9 +1235,32 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: 16px;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(9px);
   z-index: 1000;
+  animation: fadeIn 0.2s var(--ease);
+}
+
+.global-loading::before {
+  content: "";
+  position: absolute;
+  width: min(220px, calc(100vw - 48px));
+  height: 156px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg2) 92%, transparent), color-mix(in srgb, var(--bg3) 88%, transparent));
+  box-shadow: var(--shadow);
+  animation: modalIn 0.24s var(--ease);
+}
+
+.global-loading.is-hiding {
+  animation: overlayOut 0.22s var(--ease) forwards;
+  pointer-events: none;
+}
+
+.global-loading.is-hiding::before {
+  animation: modalOut 0.22s var(--ease) forwards;
 }
 
 .global-loading.hidden {
@@ -1211,13 +1270,11 @@ button:disabled {
 .global-loading .spinner {
   width: 56px;
   height: 56px;
-  border: 4px solid var(--border);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  z-index: 1;
 }
 
 .global-loading p {
+  z-index: 1;
   font-size: 0.95rem;
   color: var(--text);
   letter-spacing: 0.05em;
@@ -1232,9 +1289,39 @@ button:disabled {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+@keyframes overlayOut {
+  from { opacity: 1; backdrop-filter: blur(8px); }
+  to   { opacity: 0; backdrop-filter: blur(2px); }
+}
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(12px) scale(0.985); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes modalOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(10px) scale(0.985); }
+}
+@keyframes sheetOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(32px); }
+}
+@keyframes loaderIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes loaderOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-6px) scale(0.98); }
+}
+@keyframes glowPulse {
+  0%, 100% { filter: saturate(1); box-shadow: 0 0 18px var(--accent-glow); }
+  50% { filter: saturate(1.22); box-shadow: 0 0 30px var(--accent-glow); }
+}
+@keyframes syncDots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75%, 100% { content: "..."; }
 }
 @keyframes scanPulse {
   0%, 100% { box-shadow: 0 0 0 999px rgba(0,0,0,0.24), 0 0 18px var(--accent-glow); }
@@ -1501,6 +1588,10 @@ button:disabled {
   .modal-overlay {
     align-items: flex-end;
     padding: 0;
+  }
+
+  .modal-overlay.modal-closing .modal-box {
+    animation: sheetOut 0.22s var(--ease) forwards;
   }
 
   .modal-box {
