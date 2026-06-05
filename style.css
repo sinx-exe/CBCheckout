@@ -933,6 +933,42 @@ textarea {
 }
 .detail-row:last-child { border-bottom: none; }
 
+.device-danger-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--red);
+  border-radius: var(--radius-sm);
+  background: var(--red-dim);
+}
+
+.btn-remove-device {
+  min-height: 34px;
+  border: 1px solid var(--red);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--red);
+  padding: 8px 12px;
+  font-family: 'Lexend Deca', sans-serif;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.btn-remove-device:hover {
+  background: rgba(255, 77, 106, 0.12);
+}
+
+.device-danger-note {
+  color: var(--text2);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
 .detail-label {
   font-size: 0.65rem;
   font-weight: 700;
@@ -1459,6 +1495,15 @@ textarea {
 
   .detail-value {
     overflow-wrap: anywhere;
+  }
+
+  .device-danger-section {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .device-danger-note {
+    text-align: left;
   }
 
   .edit-icon-btn {

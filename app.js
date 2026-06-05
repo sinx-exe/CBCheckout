@@ -601,6 +601,34 @@ async function saveNotes() {
   }
 }
 
+async function removeOpenDevice() {
+  if (!isLoggedIn) return;
+  const cb = chromebooks.find(c => c.id === openDeviceIndex);
+  if (!cb) return;
+
+  if (!window.confirm(`Remove Chromebook #${cb.id} from inventory? This will delete it from the Devices sheet.`)) {
+    return;
+  }
+
+  showGlobalLoading();
+
+  try {
+    const nextState = await scriptRequest('removeDevice', { id: cb.id });
+    openDeviceIndex = null;
+    closeModal('device-modal');
+    applyState(nextState, { persist: true });
+  } catch (err) {
+    setSyncStatus(false);
+    const error = document.getElementById('dm-notes-error');
+    if (error) {
+      error.textContent = err.message || 'Unable to remove Chromebook.';
+      error.classList.remove('hidden');
+    }
+  } finally {
+    hideGlobalLoading();
+  }
+}
+
 // ── INLINE EDIT ──
 function editField(field) {
   if (!isLoggedIn) return;

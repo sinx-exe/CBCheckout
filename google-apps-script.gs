@@ -82,6 +82,8 @@ function doPost(e) {
       updateNote_(body.id, body.note);
     } else if (action === 'addDevice') {
       addDevice_(body.barcode, body.serial);
+    } else if (action === 'removeDevice') {
+      removeDevice_(body.id);
     } else if (action === 'clearLog') {
       clearLog_();
     } else {
@@ -249,6 +251,24 @@ function addDevice_(barcode, serial) {
   ]);
 
   addLog_('edit', nextId, `#${nextId} (${cleanBarcode} / ${cleanSerial}) added to inventory`);
+}
+
+function removeDevice_(id) {
+  const cleanId = Number(id);
+  if (!cleanId) throw new Error('Missing Chromebook ID.');
+
+  const sheet = getSheet_(DEVICES_SHEET);
+  const devices = getDeviceRows_();
+  const match = devices.find(item => Number(item.device.ID) === cleanId);
+  if (!match) throw new Error('Chromebook not found.');
+  if (isDeviceOut_(match.device)) {
+    throw new Error(`Chromebook #${cleanId} is checked out. Check it in before removing it.`);
+  }
+
+  const barcode = String(getDeviceValue_(match.device, 'Barcode') || '');
+  const serial = String(getDeviceValue_(match.device, 'Serial') || '');
+  sheet.deleteRow(match.rowNumber);
+  addLog_('edit', cleanId, `#${cleanId} (${barcode} / ${serial}) removed from inventory`);
 }
 
 function clearLog_() {
