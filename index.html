@@ -1,80 +1,343 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bag Boutique | Stylish Bags for Every Occasion</title>
-  <style>
-    
-  </style>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Chromebook Checkout</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@400;700;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="https://static.vecteezy.com/system/resources/previews/009/408/702/non_2x/computer-icon-transparent-free-png.png">
+  <script src="app.js" defer></script>
 </head>
 <body>
-  <div class="page">
-    <header>
-      <div class="brand">Bag Boutique</div>
-      <nav>
-        <ul class="nav-list">
-          <li><a href="#collections">Collections</a></li>
-          <li><a href="#best-sellers">Best Sellers</a></li>
-          <li><a href="#why-us">Why Us</a></li>
-          <li><a href="#contact">Contact</a></li>
-        </ul>
-      </nav>
-    </header>
+  <main class="login-overlay" id="login-overlay">
+    <section class="login-box" aria-labelledby="login-title">
+      <div class="login-logo" aria-hidden="true">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="4" width="18" height="12" rx="2"></rect>
+          <path d="M7 20h10"></path>
+          <path d="M9 16v4"></path>
+          <path d="M15 16v4"></path>
+        </svg>
+      </div>
+      <h1 class="login-title" id="login-title">CHROMEBOOK CHECKOUT</h1>
+      <p class="login-subtitle">Sign in to manage device inventory</p>
 
-    <section class="hero">
-      <div class="hero-copy">
-        <div class="eyebrow">Every day essentials</div>
-        <h1 class="hero-title">Discover the perfect bag for your next journey.</h1>
-        <p class="hero-text">Shop curated totes, backpacks, crossbody bags, and travel companions crafted with premium leather, sustainable fabrics, and modern details.</p>
-        <div class="hero-actions">
-          <button class="button button-primary">Shop New Arrivals</button>
-          <button class="button button-secondary">View Best Sellers</button>
-        </div>
-        <div class="highlights">
-          <span class="pill">Free shipping on orders over $75</span>
-          <span class="pill">30-day returns � Lifetime support</span>
+      <div class="field-group">
+        <label for="login-username">USERNAME</label>
+        <input type="text" id="login-username" autocomplete="username" placeholder="username" autocapitalize="none" />
+      </div>
+      <div class="field-group">
+        <label for="login-password">PASSWORD</label>
+        <input type="password" id="login-password" autocomplete="current-password" placeholder="password" />
+      </div>
+      <div id="login-error" class="login-error hidden">Invalid username or password.</div>
+      <button class="btn-login" type="button" onclick="doLogin()">SIGN IN</button>
+    </section>
+  </main>
+
+  <div class="app hidden" id="app">
+    <header class="header">
+      <div class="header-left">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="12" rx="2"></rect>
+          <path d="M7 20h10"></path>
+          <path d="M9 16v4"></path>
+          <path d="M15 16v4"></path>
+        </svg>
+        <div>
+          <h1 class="app-title">CHROMEBOOK CHECKOUT</h1>
+          <span class="app-sub">PHS DEVICE INVENTORY</span>
         </div>
       </div>
+      <div class="header-right">
+        <span class="user-badge">
+          <span>USER</span>
+          <strong id="logged-in-user">username</strong>
+        </span>
+        <span class="sync-badge offline" id="sync-status">SYNC OFFLINE</span>
+        <button class="btn-theme" type="button" onclick="toggleTheme()" aria-label="Toggle theme">
+          <span id="theme-icon">🌙</span>
+        </button>
+        <button class="btn-logout" type="button" onclick="doLogout()">
+          <span>LOGOUT</span>
+        </button>
+      </div>
+    </header>
 
-      <div class="hero-visual">
-        <div class="hero-card">
-          <img src="https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=900&q=80" alt="Fashionable bag on display" />
-          <div class="hero-card-body">
-            <h2 class="hero-card-title">The Urban Carryall</h2>
-            <p class="hero-card-copy">A polished tote with room for laptop, wallet, and weekday essentials.</p>
-            <div class="pill">Limited Edition</div>
+    <section class="actions-section" aria-label="Device actions">
+      <button class="action-btn checkout-btn" type="button" onclick="openModal('checkout')">
+        <div class="action-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14"></path>
+            <path d="M12 5l7 7-7 7"></path>
+          </svg>
+        </div>
+        <div class="action-text">
+          <span class="action-label">CHECK OUT</span>
+          <span class="action-desc">Assign device to student</span>
+        </div>
+      </button>
+
+      <button class="action-btn checkin-btn" type="button" onclick="openModal('checkin')">
+        <div class="action-icon" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5"></path>
+            <path d="M12 19l-7-7 7-7"></path>
+          </svg>
+        </div>
+        <div class="action-text">
+          <span class="action-label">CHECK IN</span>
+          <span class="action-desc">Return device to inventory</span>
+        </div>
+      </button>
+    </section>
+
+    <section class="stats-section" aria-label="Inventory stats">
+      <div class="stat-card available-card">
+        <div class="stat-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <path d="M22 4 12 14.01l-3-3"></path>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-number" id="available-count">32</span>
+          <span class="stat-label">AVAILABLE</span>
+        </div>
+      </div>
+      <div class="stat-card checkedout-card">
+        <div class="stat-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
+        </div>
+        <div class="stat-info">
+          <span class="stat-number" id="checkedout-count">0</span>
+          <span class="stat-label">CHECKED OUT</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="report-section" aria-label="Currently checked out report">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">OUT REPORT</h2>
+          <span class="section-hint">Chromebooks currently checked out</span>
+        </div>
+        <span class="report-count" id="report-count">0 OUT</span>
+      </div>
+      <div class="report-table" id="out-report">
+        <div class="report-empty">No Chromebooks are currently checked out.</div>
+      </div>
+    </section>
+
+    <section class="grid-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">DEVICE INVENTORY</h2>
+          <span class="section-hint">Click any device to view details</span>
+        </div>
+        <button class="btn-add-device" type="button" onclick="openAddDeviceModal()">ADD CHROMEBOOK</button>
+      </div>
+      <div class="chromebook-grid" id="chromebook-grid"></div>
+    </section>
+
+    <section class="log-section">
+      <div class="section-header">
+        <h2 class="section-title">ACTIVITY LOG</h2>
+        <button class="btn-clear-log" type="button" onclick="clearLog()">CLEAR LOG</button>
+      </div>
+      <div class="log-container" id="activity-log">
+        <div class="log-empty">No activity recorded yet.</div>
+      </div>
+    </section>
+  </div>
+
+  <div id="action-modal" class="modal-overlay hidden">
+    <section class="modal-box" aria-labelledby="modal-title">
+      <button class="modal-close" type="button" onclick="closeModal('action-modal')" aria-label="Close">X</button>
+      <h2 class="modal-title" id="modal-title">CHECK OUT</h2>
+      <p class="modal-desc" id="modal-desc">Assign a Chromebook number, barcode, or serial to a student.</p>
+
+      <div id="checkout-fields">
+        <div class="field-group">
+          <label for="co-serial">CHROMEBOOK #, BARCODE, OR SERIAL</label>
+          <div class="scan-input-row">
+            <input type="text" id="co-serial" placeholder="16, Chromebook 16, BC-000016, or CB-000016" autocomplete="off" autocapitalize="characters" inputmode="text" />
+            <button class="btn-scan" type="button" onclick="openScanner('co-serial', 'Chromebook barcode or serial')">
+              <span aria-hidden="true">▦</span>
+              <span>SCAN</span>
+            </button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label for="co-student">STUDENT ID</label>
+          <div class="scan-input-row">
+            <input type="text" id="co-student" placeholder="" autocomplete="off" autocapitalize="none" inputmode="numeric" />
+            <button class="btn-scan" type="button" onclick="openScanner('co-student', 'Student ID')">
+              <span aria-hidden="true">▦</span>
+              <span>SCAN</span>
+            </button>
           </div>
         </div>
       </div>
-    </section>
 
-    <section class="featured" id="best-sellers">
-      <article class="featured-card">
-        <img src="https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=600&q=80" alt="Minimal leather backpack" />
-        <h3>Minimalist Backpack</h3>
-        <p>Refined design, padded straps, and an interior organizer for daily commute ease.</p>
-        <div class="price">$120</div>
-      </article>
-      <article class="featured-card">
-        <img src="https://images.unsplash.com/photo-1542831371-d531d36971e6?auto=format&fit=crop&w=600&q=80" alt="Elegant shoulder bag" />
-        <h3>Everyday Shoulder Bag</h3>
-        <p>Soft silhouette, secure magnetic closure, and a versatile strap for all-day style.</p>
-        <div class="price">$94</div>
-      </article>
-      <article class="featured-card">
-        <img src="https://images.unsplash.com/photo-1495121605193-b116b5b9c5d9?auto=format&fit=crop&w=600&q=80" alt="Travel duffel bag" />
-        <h3>Weekend Duffel</h3>
-        <p>Durable travel companion with water-resistant fabric and thoughtful packing pockets.</p>
-        <div class="price">$148</div>
-      </article>
-    </section>
+      <div id="checkin-fields" class="hidden">
+        <div class="field-group">
+          <label for="ci-student">STUDENT ID OR CHROMEBOOK #</label>
+          <div class="scan-input-row">
+            <input type="text" id="ci-student" placeholder="Student ID, 16, or Chromebook 16" autocomplete="off" autocapitalize="none" inputmode="text" />
+            <button class="btn-scan" type="button" onclick="openScanner('ci-student', 'Student ID or Chromebook number')">
+              <span aria-hidden="true">▦</span>
+              <span>SCAN</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
-    <footer id="contact">
-      <div>Bag Boutique � Crafted with care for your everyday carry</div>
-      <div>Questions? Email hello@bagboutique.com</div>
-    </footer>
+      <div id="modal-error" class="login-error hidden"></div>
+      <div id="modal-loading" class="modal-loading hidden">
+        <div class="spinner"></div>
+        <p>Syncing...</p>
+      </div>
+      <button class="btn-submit" id="modal-submit-btn" type="button" onclick="submitAction()">SUBMIT</button>
+    </section>
+  </div>
+
+  <div id="device-modal" class="modal-overlay hidden">
+    <section class="modal-box device-modal-box" aria-labelledby="dm-title">
+      <button class="modal-close" type="button" onclick="closeModal('device-modal')" aria-label="Close">X</button>
+      <div class="device-modal-header">
+        <div class="device-number-badge" id="dm-number">01</div>
+        <div>
+          <h2 class="modal-title" id="dm-title">CHROMEBOOK #1</h2>
+          <span class="status-pill available" id="dm-status-pill">AVAILABLE</span>
+        </div>
+      </div>
+
+      <div class="device-notes-section">
+        <div class="device-notes-header">
+          <h3 class="device-log-title">NOTES</h3>
+          <span class="device-notes-status" id="dm-notes-status">No note</span>
+        </div>
+        <textarea id="dm-notes-input" rows="4" placeholder="Add repair notes, charger issues, labels, or other Chromebook details."></textarea>
+        <div id="dm-notes-error" class="notes-error hidden"></div>
+        <button class="btn-save-notes" type="button" onclick="saveNotes()">SAVE NOTES</button>
+      </div>
+
+      <div class="device-detail-grid">
+        <div class="detail-row">
+          <span class="detail-label">BARCODE</span>
+          <div class="detail-value-row">
+            <span class="detail-value" id="dm-barcode"></span>
+            <button class="edit-icon-btn" id="dm-barcode-edit-btn" type="button" onclick="editField('barcode')" aria-label="Edit barcode">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+              </svg>
+            </button>
+            <div class="inline-edit hidden" id="dm-barcode-edit">
+              <input id="dm-barcode-input" type="text" autocapitalize="characters" inputmode="text" />
+              <button type="button" onclick="openScanner('dm-barcode-input', 'Chromebook barcode')">Scan</button>
+              <button type="button" onclick="saveField('barcode')">Save</button>
+              <button type="button" onclick="cancelEdit('barcode')">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-row">
+          <span class="detail-label">SERIAL</span>
+          <div class="detail-value-row">
+            <span class="detail-value" id="dm-serial"></span>
+            <button class="edit-icon-btn" id="dm-serial-edit-btn" type="button" onclick="editField('serial')" aria-label="Edit serial">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+              </svg>
+            </button>
+            <div class="inline-edit hidden" id="dm-serial-edit">
+              <input id="dm-serial-input" type="text" autocapitalize="characters" inputmode="text" />
+              <button type="button" onclick="saveField('serial')">Save</button>
+              <button type="button" onclick="cancelEdit('serial')">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-row" id="dm-student-row">
+          <span class="detail-label">STUDENT</span>
+          <span class="detail-value" id="dm-student"></span>
+        </div>
+        <div class="detail-row" id="dm-time-row">
+          <span class="detail-label">CHECKOUT TIME</span>
+          <span class="detail-value" id="dm-time"></span>
+        </div>
+      </div>
+
+      <div class="device-danger-section">
+        <button class="btn-remove-device" type="button" onclick="removeOpenDevice()">REMOVE CHROMEBOOK</button>
+        <span class="device-danger-note">Only available Chromebooks can be removed.</span>
+      </div>
+
+      <div class="device-log-section">
+        <div class="device-log-header">
+          <h3 class="device-log-title">DEVICE ACTIVITY</h3>
+          <span class="device-log-count" id="dm-log-count">0 events</span>
+        </div>
+        <div class="device-log-container" id="dm-log">
+          <div class="log-empty">No activity for this device yet.</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="add-device-modal" class="modal-overlay hidden">
+    <section class="modal-box" aria-labelledby="add-device-title">
+      <button class="modal-close" type="button" onclick="closeModal('add-device-modal')" aria-label="Close">X</button>
+      <h2 class="modal-title" id="add-device-title">ADD CHROMEBOOK</h2>
+      <p class="modal-desc">Create a new device row in the shared Google Sheet. Leave a field blank to auto-generate it.</p>
+
+      <div class="field-group">
+        <label for="add-barcode">CHROMEBOOK BARCODE</label>
+        <div class="scan-input-row">
+          <input type="text" id="add-barcode" placeholder="Auto-generate if blank" autocomplete="off" autocapitalize="characters" inputmode="text" />
+          <button class="btn-scan" type="button" onclick="openScanner('add-barcode', 'Chromebook barcode')">
+            <span aria-hidden="true">▦</span>
+            <span>SCAN</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label for="add-serial">SERIAL</label>
+        <input type="text" id="add-serial" placeholder="Auto-generate if blank" autocomplete="off" autocapitalize="characters" inputmode="text" />
+      </div>
+
+      <div id="add-device-error" class="login-error hidden"></div>
+      <button class="btn-submit" id="add-device-submit" type="button" onclick="submitAddDevice()">ADD CHROMEBOOK</button>
+    </section>
+  </div>
+
+  <div id="scanner-modal" class="modal-overlay scanner-overlay hidden">
+    <section class="modal-box scanner-box" aria-labelledby="scanner-title">
+      <button class="modal-close" type="button" onclick="closeScanner()" aria-label="Close scanner">X</button>
+      <h2 class="modal-title" id="scanner-title">SCAN BARCODE</h2>
+      <p class="modal-desc" id="scanner-desc">Point the camera at the barcode.</p>
+      <div class="scanner-frame">
+        <video id="scanner-video" playsinline muted></video>
+        <div class="scanner-reticle" aria-hidden="true"></div>
+      </div>
+      <div class="scanner-status" id="scanner-status">Starting camera...</div>
+      <button class="btn-submit scanner-cancel" type="button" onclick="closeScanner()">CANCEL SCAN</button>
+    </section>
+  </div>
+
+  <div class="global-loading hidden" id="global-loading">
+    <div class="spinner"></div>
+    <p>Syncing...</p>
   </div>
 </body>
 </html>
