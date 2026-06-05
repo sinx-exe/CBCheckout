@@ -24,7 +24,7 @@ const SPREADSHEET_ID = '19mq5Y_fighXt1KX3oO7LhST142hJdfh0yDIXAcN7waY';
 const DEVICES_SHEET = 'Devices';
 const LOG_SHEET = 'ActivityLog';
 const OUT_SHEET = 'OUT';
-const BACKEND_VERSION = 'out-report-status-2026-06-04-v1';
+const BACKEND_VERSION = 'remove-device-out-report-2026-06-05-v1';
 
 function doGet(e) {
   try {
@@ -318,6 +318,7 @@ function getDebugInfo_() {
     firstDataRow,
     statusColumnIndex: headers.findIndex(header => normalizeHeader_(header) === normalizeHeader_('Status')) + 1,
     notesColumnIndex: headers.findIndex(header => normalizeHeader_(header) === normalizeHeader_('Notes')) + 1,
+    supportedPostActions: ['checkout', 'checkin', 'updateDevice', 'updateNote', 'addDevice', 'removeDevice', 'clearLog'],
   };
 }
 
