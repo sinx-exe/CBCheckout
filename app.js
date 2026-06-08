@@ -557,6 +557,7 @@ function openDeviceModal(id) {
   document.getElementById('dm-notes-input').value   = cb.notes || '';
   document.getElementById('dm-notes-status').textContent = (cb.notes || '').trim() ? 'Saved note' : 'No note';
   document.getElementById('dm-notes-error').classList.add('hidden');
+  cancelRemoveOpenDevice();
 
   const pill = document.getElementById('dm-status-pill');
   if (cb.checkedOut) {
@@ -627,14 +628,26 @@ async function saveNotes() {
   }
 }
 
-async function removeOpenDevice() {
+function requestRemoveOpenDevice() {
   if (!isLoggedIn) return;
   const cb = chromebooks.find(c => c.id === openDeviceIndex);
   if (!cb) return;
 
-  if (!window.confirm(`Remove Chromebook #${cb.id} from inventory? This will delete it from the Devices sheet.`)) {
-    return;
-  }
+  const confirmBox = document.getElementById('device-remove-confirm');
+  const confirmText = document.getElementById('device-remove-confirm-text');
+  if (confirmText) confirmText.textContent = `Remove Chromebook #${cb.id} from inventory?`;
+  if (confirmBox) showAnimatedElement(confirmBox, 'is-hiding');
+}
+
+function cancelRemoveOpenDevice() {
+  const confirmBox = document.getElementById('device-remove-confirm');
+  if (confirmBox) hideAnimatedElement(confirmBox, 'is-hiding', UI_EXIT_MS);
+}
+
+async function removeOpenDevice() {
+  if (!isLoggedIn) return;
+  const cb = chromebooks.find(c => c.id === openDeviceIndex);
+  if (!cb) return;
 
   showGlobalLoading();
 
