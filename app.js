@@ -515,8 +515,8 @@ async function scanVideoFrame() {
       if (barcodes.length > 0) {
         const value = (barcodes[0].rawValue || '').trim();
         if (value) {
-          status.textContent = `Barcode detected: ${value}`;
-          runScannerCountdown(value);
+          status.textContent = `Barcode in frame — starting countdown.`;
+          runScannerCountdown();
           return;
         }
       }
@@ -528,20 +528,27 @@ async function scanVideoFrame() {
   scannerAnimationId = requestAnimationFrame(scanVideoFrame);
 }
 
-function runScannerCountdown(value) {
+function runScannerCountdown() {
+  // Pause live detection while the countdown plays.
   if (scannerAnimationId) {
     cancelAnimationFrame(scannerAnimationId);
     scannerAnimationId = null;
   }
-  scannerPendingValue = value;
+  scannerPendingValue = null;
 
   const overlay  = document.getElementById('scanner-countdown');
   const numberEl = document.getElementById('scanner-countdown-number');
   const ringEl   = document.getElementById('scanner-countdown-progress');
   const status   = document.getElementById('scanner-status');
   if (!overlay || !numberEl || !ringEl) {
-    // Fallback: just fill the value and close.
-    finalizeScannerCountdown();
+    // Fallback: just snapshot now and try to detect.
+    captureAndDetectSnapshot().then(({ value }) => {
+      if (value) {
+        fillScannedValue(value);
+        if (status) status.textContent = `Scanned ${value}`;
+      }
+      closeScanner();
+    });
     return;
   }
 
@@ -564,13 +571,62 @@ function runScannerCountdown(value) {
 
       if (index === sequence.length - 1) {
         const finishTimer = window.setTimeout(() => {
-          finalizeScannerCountdown();
+          captureAndDetectSnapshot().then(({ value }) => {
+            const statusEl = document.getElementById('scanner-status');
+            if (value) {
+              scannerPendingValue = value;
+              finalizeScannerCountdown();
+            } else {
+              // Nothing found in the snapshot — let the user try again.
+              if (statusEl) statusEl.textContent = 'No barcode found in the photo. Try again.';
+              hideScannerCountdown();
+              if (scannerActive) scanVideoFrame();
+            }
+          });
         }, SCANNER_COUNTDOWN_MS);
         scannerCountdownTimers.push(finishTimer);
       }
     }, index * SCANNER_COUNTDOWN_MS);
     scannerCountdownTimers.push(stepTimer);
   });
+}
+
+async function captureAndDetectSnapshot() {
+  const video = document.getElementById('scanner-video');
+  const status = document.getElementById('scanner-status');
+  if (!video || !scannerDetector) return { value: null };
+
+  if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+    return { value: null };
+  }
+
+  const width = video.videoWidth;
+  const height = video.videoHeight;
+  if (!width || !height) return { value: null };
+
+  let canvas = document.getElementById('scanner-snapshot-canvas');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'scanner-snapshot-canvas';
+    canvas.style.display = 'none';
+    document.body.appendChild(canvas);
+  }
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return { value: null };
+  ctx.drawImage(video, 0, 0, width, height);
+
+  try {
+    const barcodes = await scannerDetector.detect(canvas);
+    const raw = barcodes.length > 0 ? (barcodes[0].rawValue || '').trim() : '';
+    if (raw && status) status.textContent = `Detected ${raw}`;
+    return { value: raw || null };
+  } catch (err) {
+    if (status) status.textContent = 'Detection failed. Try again.';
+    return { value: null };
+  }
 }
 
 function finalizeScannerCountdown() {

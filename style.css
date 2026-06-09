@@ -963,7 +963,7 @@ button:disabled {
   justify-content: center;
   gap: 18px;
   padding: 18px;
-  background: rgba(0, 0, 0, 0.18);
+  background: transparent;
   z-index: 2;
   text-align: center;
   pointer-events: none;
