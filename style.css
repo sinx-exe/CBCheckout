@@ -388,6 +388,7 @@ button:disabled {
 }
 
 .action-btn {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 18px;
@@ -397,19 +398,59 @@ button:disabled {
   background: var(--bg2);
   cursor: pointer;
   box-shadow: var(--shadow-soft);
-  transition: border-color 0.2s var(--ease), background 0.2s var(--ease), transform 0.18s var(--ease), box-shadow 0.18s var(--ease);
+  transition: border-color 0.2s var(--ease), transform 0.18s var(--ease), box-shadow 0.18s var(--ease), color 0.2s var(--ease);
   text-align: left;
   min-height: 92px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.action-btn > * {
+  position: relative;
+  z-index: 1;
+}
+
+.action-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.42s var(--ease), background-color 0.2s var(--ease);
+  z-index: 0;
+}
+
+.checkout-btn::before { background: var(--red); }
+.checkin-btn::before  { background: var(--green); }
+
+.checkout-btn:hover::before,
+.checkin-btn:hover::before {
+  transform: scaleX(1);
+}
+
+.checkout-btn:hover,
+.checkin-btn:hover {
+  border-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  color: #fff;
+}
+
+.checkout-btn:hover .action-label,
+.checkin-btn:hover .action-label,
+.checkout-btn:hover .action-desc,
+.checkin-btn:hover .action-desc {
+  color: #fff;
 }
 
 .checkout-btn { border-left: 3px solid var(--red); }
 .checkin-btn  { border-left: 3px solid var(--green); }
 
-.checkout-btn:hover { background: var(--red-dim); border-color: var(--red); transform: translateY(-2px); box-shadow: var(--shadow-hover); }
-.checkin-btn:hover  { background: var(--green-dim); border-color: var(--green); transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.checkout-btn .action-icon { color: var(--red); transition: color 0.2s var(--ease); }
+.checkin-btn  .action-icon { color: var(--green); transition: color 0.2s var(--ease); }
 
-.checkout-btn .action-icon { color: var(--red); }
-.checkin-btn  .action-icon { color: var(--green); }
+.checkout-btn:hover .action-icon { color: #fff; }
+.checkin-btn:hover  .action-icon { color: #fff; }
 
 .action-label {
   display: block;
