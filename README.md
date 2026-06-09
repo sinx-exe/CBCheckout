@@ -28,21 +28,28 @@ The app will show:
 
 ## Google Sheet Setup
 
-Create one Google Sheets spreadsheet. The script uses two tabs inside that one spreadsheet:
+Create one Google Sheets spreadsheet. The script uses three tabs inside that one spreadsheet:
 
 ### Devices
 
-| ID | Barcode | Serial | CheckedOut | StudentID | CheckoutTime | UpdatedAt |
-| --- | --- | --- | --- | --- | --- | --- |
+| ID | Barcode | Serial | Status | StudentID | CheckoutTime | UpdatedAt | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
 
-Each row is one Chromebook. If the sheet is empty, the script creates 32 default rows like `BC-000001` and `CB-000001`.
+Each row is one Chromebook. `Status` is written as `in` or `out`. If the sheet is empty, the script creates 32 default rows like `BC-000001` and `CB-000001`. New Chromebooks added in the app are appended here and notes are saved in the `Notes` column.
 
 ### ActivityLog
 
 | Timestamp | Type | DeviceID | Message |
 | --- | --- | --- | --- |
 
-Each checkout, check-in, or barcode/serial edit is logged here.
+Each checkout, check-in, barcode/serial edit, note update, or added Chromebook is logged here.
+
+### OUT
+
+| ID | Barcode | Serial | StudentID | CheckoutTime | Notes |
+| --- | --- | --- | --- | --- | --- |
+
+This tab is rebuilt automatically and only lists Chromebooks currently checked out.
 
 You can create these tabs manually, or just run the Apps Script setup once and it will create the tabs and headers for you.
 
@@ -93,6 +100,12 @@ No private keys or secrets are needed. The frontend only knows the public Web Ap
 8. Wait up to 10 seconds for the other device to refresh from Google Sheets.
 
 The app polls the Google Sheet every 10 seconds. Apps Script is simple and free, but it is not instant push sync.
+
+## Checkout / Check-In Lookup
+
+For checkout, the Chromebook field accepts the device number, barcode, or serial. Examples: `16`, `Chromebook 16`, `BC-000016`, or `CB-000016`.
+
+For check-in, the lookup field accepts either the Student ID or the Chromebook number.
 
 ## Camera Notes
 

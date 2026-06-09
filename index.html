@@ -6,7 +6,7 @@
   <title>Chromebook Checkout</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@400;700;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <link rel="icon" type="image/x-icon" href="https://static.vecteezy.com/system/resources/previews/009/408/702/non_2x/computer-icon-transparent-free-png.png">
   <script src="app.js" defer></script>
@@ -122,10 +122,26 @@
       </div>
     </section>
 
+    <section class="report-section" aria-label="Currently checked out report">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">OUT REPORT</h2>
+          <span class="section-hint">Chromebooks currently checked out</span>
+        </div>
+        <span class="report-count" id="report-count">0 OUT</span>
+      </div>
+      <div class="report-table" id="out-report">
+        <div class="report-empty">No Chromebooks are currently checked out.</div>
+      </div>
+    </section>
+
     <section class="grid-section">
       <div class="section-header">
-        <h2 class="section-title">DEVICE INVENTORY</h2>
-        <span class="section-hint">Click any device to view details</span>
+        <div>
+          <h2 class="section-title">DEVICE INVENTORY</h2>
+          <span class="section-hint">Click any device to view details</span>
+        </div>
+        <button class="btn-add-device" type="button" onclick="openAddDeviceModal()">ADD CHROMEBOOK</button>
       </div>
       <div class="chromebook-grid" id="chromebook-grid"></div>
     </section>
@@ -143,16 +159,16 @@
 
   <div id="action-modal" class="modal-overlay hidden">
     <section class="modal-box" aria-labelledby="modal-title">
-      <button class="modal-close" type="button" onclick="closeModal('action-modal')" aria-label="Close">X</button>
+      <button class="modal-close" type="button" onclick="closeModal('action-modal')">CANCEL</button>
       <h2 class="modal-title" id="modal-title">CHECK OUT</h2>
-      <p class="modal-desc" id="modal-desc">Assign a Chromebook to a student.</p>
+      <p class="modal-desc" id="modal-desc">Assign a Chromebook number, barcode, or serial to a student.</p>
 
       <div id="checkout-fields">
         <div class="field-group">
-          <label for="co-serial">CHROMEBOOK BARCODE OR SERIAL #</label>
+          <label for="co-serial">CHROMEBOOK #, BARCODE, OR SERIAL</label>
           <div class="scan-input-row">
             <input type="text" id="co-serial" placeholder="" autocomplete="off" autocapitalize="characters" inputmode="text" />
-            <button class="btn-scan" type="button" onclick="openScanner('co-serial', 'Chromebook barcode')">
+            <button class="btn-scan" type="button" onclick="openScanner('co-serial', 'Chromebook barcode or serial')">
               <span aria-hidden="true">▦</span>
               <span>SCAN</span>
             </button>
@@ -172,10 +188,10 @@
 
       <div id="checkin-fields" class="hidden">
         <div class="field-group">
-          <label for="ci-student">STUDENT ID</label>
+          <label for="ci-student">STUDENT ID OR CHROMEBOOK #</label>
           <div class="scan-input-row">
-            <input type="text" id="ci-student" placeholder="" autocomplete="off" autocapitalize="none" inputmode="numeric" />
-            <button class="btn-scan" type="button" onclick="openScanner('ci-student', 'Student ID')">
+            <input type="text" id="ci-student" placeholder="" autocomplete="off" autocapitalize="none" inputmode="text" />
+            <button class="btn-scan" type="button" onclick="openScanner('ci-student', 'Student ID or Chromebook number')">
               <span aria-hidden="true">▦</span>
               <span>SCAN</span>
             </button>
@@ -186,7 +202,7 @@
       <div id="modal-error" class="login-error hidden"></div>
       <div id="modal-loading" class="modal-loading hidden">
         <div class="spinner"></div>
-        <p>Syncing...</p>
+        <p>Syncing</p>
       </div>
       <button class="btn-submit" id="modal-submit-btn" type="button" onclick="submitAction()">SUBMIT</button>
     </section>
@@ -194,13 +210,23 @@
 
   <div id="device-modal" class="modal-overlay hidden">
     <section class="modal-box device-modal-box" aria-labelledby="dm-title">
-      <button class="modal-close" type="button" onclick="closeModal('device-modal')" aria-label="Close">X</button>
+      <button class="modal-close" type="button" onclick="closeModal('device-modal')">CANCEL</button>
       <div class="device-modal-header">
         <div class="device-number-badge" id="dm-number">01</div>
         <div>
           <h2 class="modal-title" id="dm-title">CHROMEBOOK #1</h2>
           <span class="status-pill available" id="dm-status-pill">AVAILABLE</span>
         </div>
+      </div>
+
+      <div class="device-notes-section">
+        <div class="device-notes-header">
+          <h3 class="device-log-title">NOTES</h3>
+          <span class="device-notes-status" id="dm-notes-status">No note</span>
+        </div>
+        <textarea id="dm-notes-input" rows="4" placeholder="Add repair notes, charger issues, labels, or other Chromebook details."></textarea>
+        <div id="dm-notes-error" class="notes-error hidden"></div>
+        <button class="btn-save-notes" type="button" onclick="saveNotes()">SAVE NOTES</button>
       </div>
 
       <div class="device-detail-grid">
@@ -251,6 +277,20 @@
         </div>
       </div>
 
+      <div class="device-danger-section">
+        <div class="device-danger-copy">
+          <button class="btn-remove-device" type="button" onclick="requestRemoveOpenDevice()">REMOVE CHROMEBOOK</button>
+          <span class="device-danger-note">Only available Chromebooks can be removed.</span>
+        </div>
+        <div class="device-remove-confirm hidden" id="device-remove-confirm">
+          <span id="device-remove-confirm-text">Remove this Chromebook?</span>
+          <div class="device-remove-actions">
+            <button class="btn-confirm-remove" type="button" onclick="removeOpenDevice()">CONFIRM</button>
+            <button class="btn-cancel-remove" type="button" onclick="cancelRemoveOpenDevice()">CANCEL</button>
+          </div>
+        </div>
+      </div>
+
       <div class="device-log-section">
         <div class="device-log-header">
           <h3 class="device-log-title">DEVICE ACTIVITY</h3>
@@ -263,9 +303,36 @@
     </section>
   </div>
 
+  <div id="add-device-modal" class="modal-overlay hidden">
+    <section class="modal-box" aria-labelledby="add-device-title">
+      <button class="modal-close" type="button" onclick="closeModal('add-device-modal')">CANCEL</button>
+      <h2 class="modal-title" id="add-device-title">ADD CHROMEBOOK</h2>
+      <p class="modal-desc">Creates new Chromebook entry. Barcode and serial are required.</p>
+
+      <div class="field-group">
+        <label for="add-barcode">CHROMEBOOK BARCODE</label>
+        <div class="scan-input-row">
+          <input type="text" id="add-barcode" placeholder="Enter Chromebook barcode" autocomplete="off" autocapitalize="characters" inputmode="text" required />
+          <button class="btn-scan" type="button" onclick="openScanner('add-barcode', 'Chromebook barcode')">
+            <span aria-hidden="true">▦</span>
+            <span>SCAN</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label for="add-serial">SERIAL</label>
+        <input type="text" id="add-serial" placeholder="Enter serial number" autocomplete="off" autocapitalize="characters" inputmode="text" required />
+      </div>
+
+      <div id="add-device-error" class="login-error hidden"></div>
+      <button class="btn-submit" id="add-device-submit" type="button" onclick="submitAddDevice()">ADD CHROMEBOOK</button>
+    </section>
+  </div>
+
   <div id="scanner-modal" class="modal-overlay scanner-overlay hidden">
     <section class="modal-box scanner-box" aria-labelledby="scanner-title">
-      <button class="modal-close" type="button" onclick="closeScanner()" aria-label="Close scanner">X</button>
+      <button class="modal-close" type="button" onclick="closeScanner()">CANCEL</button>
       <h2 class="modal-title" id="scanner-title">SCAN BARCODE</h2>
       <p class="modal-desc" id="scanner-desc">Point the camera at the barcode.</p>
       <div class="scanner-frame">
@@ -279,7 +346,7 @@
 
   <div class="global-loading hidden" id="global-loading">
     <div class="spinner"></div>
-    <p>Syncing...</p>
+    <p>Syncing</p>
   </div>
 </body>
 </html>
