@@ -25,6 +25,10 @@ let scannerDetector = null;
 let scannerTargetInputId = null;
 let scannerAnimationId = null;
 let scannerActive = false;
+let scannerCountdownTimers = [];
+let scannerPendingValue = null;
+const SCANNER_COUNTDOWN_MS = 1000;
+const SCANNER_COUNTDOWN_RING_CIRCUMFERENCE = 339.292;
 let sheetConnected = false;
 let syncTimer = null;
 
@@ -511,9 +515,8 @@ async function scanVideoFrame() {
       if (barcodes.length > 0) {
         const value = (barcodes[0].rawValue || '').trim();
         if (value) {
-          fillScannedValue(value);
-          status.textContent = `Scanned ${value}`;
-          closeScanner();
+          status.textContent = `Barcode detected: ${value}`;
+          runScannerCountdown(value);
           return;
         }
       }
@@ -523,6 +526,81 @@ async function scanVideoFrame() {
   }
 
   scannerAnimationId = requestAnimationFrame(scanVideoFrame);
+}
+
+function runScannerCountdown(value) {
+  if (scannerAnimationId) {
+    cancelAnimationFrame(scannerAnimationId);
+    scannerAnimationId = null;
+  }
+  scannerPendingValue = value;
+
+  const overlay  = document.getElementById('scanner-countdown');
+  const numberEl = document.getElementById('scanner-countdown-number');
+  const ringEl   = document.getElementById('scanner-countdown-progress');
+  const status   = document.getElementById('scanner-status');
+  if (!overlay || !numberEl || !ringEl) {
+    // Fallback: just fill the value and close.
+    finalizeScannerCountdown();
+    return;
+  }
+
+  if (status) status.textContent = 'Hold steady...';
+
+  clearScannerCountdownTimers();
+  overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-hidden', 'false');
+
+  const sequence = [3, 2, 1];
+  sequence.forEach((count, index) => {
+    const stepTimer = window.setTimeout(() => {
+      if (!scannerActive) return;
+      numberEl.textContent = String(count);
+      // Force restart of the ring animation by toggling the class.
+      ringEl.classList.remove('is-running');
+      // Reflow to restart the CSS animation cleanly.
+      void ringEl.getBoundingClientRect();
+      ringEl.classList.add('is-running');
+
+      if (index === sequence.length - 1) {
+        const finishTimer = window.setTimeout(() => {
+          finalizeScannerCountdown();
+        }, SCANNER_COUNTDOWN_MS);
+        scannerCountdownTimers.push(finishTimer);
+      }
+    }, index * SCANNER_COUNTDOWN_MS);
+    scannerCountdownTimers.push(stepTimer);
+  });
+}
+
+function finalizeScannerCountdown() {
+  const value = scannerPendingValue;
+  clearScannerCountdownTimers();
+  hideScannerCountdown();
+  scannerPendingValue = null;
+  if (value) {
+    fillScannedValue(value);
+    const status = document.getElementById('scanner-status');
+    if (status) status.textContent = `Scanned ${value}`;
+  }
+  closeScanner();
+}
+
+function hideScannerCountdown() {
+  const overlay = document.getElementById('scanner-countdown');
+  const numberEl = document.getElementById('scanner-countdown-number');
+  const ringEl = document.getElementById('scanner-countdown-progress');
+  if (overlay) {
+    overlay.classList.add('hidden');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+  if (ringEl) ringEl.classList.remove('is-running');
+  if (numberEl) numberEl.textContent = '3';
+}
+
+function clearScannerCountdownTimers() {
+  scannerCountdownTimers.forEach(id => window.clearTimeout(id));
+  scannerCountdownTimers = [];
 }
 
 function fillScannedValue(value) {
@@ -540,6 +618,9 @@ function closeScanner() {
     cancelAnimationFrame(scannerAnimationId);
     scannerAnimationId = null;
   }
+  clearScannerCountdownTimers();
+  scannerPendingValue = null;
+  hideScannerCountdown();
   stopScannerStream();
 
   const modal = document.getElementById('scanner-modal');
