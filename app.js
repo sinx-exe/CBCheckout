@@ -10,7 +10,7 @@ const LOGIN_KEY = 'cbcheckout-current-user';
 // Paste your deployed Google Apps Script Web App URL here.
 // It should look like:
 // https://script.google.com/macros/s/AKfycb.../exec
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuZNWZuWjo4CO3z-zVjQ2o2L39WCWRCC1vHCJOKnMspiKYuEo-W71bpUcQjM0j8_FA/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbytbjPnNzdbz-YSr9lehvFoTQe0dzMZ_rfSTVJwa3aAo1Ikz78tBi08WXQthXnZ-rH8/exec';
 
 const SYNC_INTERVAL_MS = 10000;
 const UI_EXIT_MS = 220;
