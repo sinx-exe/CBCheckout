@@ -307,12 +307,12 @@
     <section class="modal-box" aria-labelledby="add-device-title">
       <button class="modal-close" type="button" onclick="closeModal('add-device-modal')">CANCEL</button>
       <h2 class="modal-title" id="add-device-title">ADD CHROMEBOOK</h2>
-      <p class="modal-desc">Create a new device row in the shared Google Sheet. Leave a field blank to auto-generate it.</p>
+      <p class="modal-desc">Creates new Chromebook entry. Barcode and serial are required.</p>
 
       <div class="field-group">
         <label for="add-barcode">CHROMEBOOK BARCODE</label>
         <div class="scan-input-row">
-          <input type="text" id="add-barcode" placeholder="Auto-generate if blank" autocomplete="off" autocapitalize="characters" inputmode="text" />
+          <input type="text" id="add-barcode" placeholder="Enter Chromebook barcode" autocomplete="off" autocapitalize="characters" inputmode="text" required />
           <button class="btn-scan" type="button" onclick="openScanner('add-barcode', 'Chromebook barcode')">
             <span aria-hidden="true">▦</span>
             <span>SCAN</span>
@@ -322,7 +322,7 @@
 
       <div class="field-group">
         <label for="add-serial">SERIAL</label>
-        <input type="text" id="add-serial" placeholder="Auto-generate if blank" autocomplete="off" autocapitalize="characters" inputmode="text" />
+        <input type="text" id="add-serial" placeholder="Enter serial number" autocomplete="off" autocapitalize="characters" inputmode="text" required />
       </div>
 
       <div id="add-device-error" class="login-error hidden"></div>

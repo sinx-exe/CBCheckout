@@ -308,6 +308,8 @@ function openAddDeviceModal() {
   document.getElementById('add-barcode').value = '';
   document.getElementById('add-serial').value = '';
   document.getElementById('add-device-error').classList.add('hidden');
+  document.getElementById('add-barcode').removeAttribute('aria-invalid');
+  document.getElementById('add-serial').removeAttribute('aria-invalid');
   showAnimatedElement(document.getElementById('add-device-modal'), 'modal-closing');
   setTimeout(() => document.getElementById('add-barcode').focus(), 100);
 }
@@ -321,6 +323,17 @@ async function submitAddDevice() {
   const serial = document.getElementById('add-serial').value.trim();
 
   errorEl.classList.add('hidden');
+
+  document.getElementById('add-barcode').setAttribute('aria-invalid', barcode ? 'false' : 'true');
+  document.getElementById('add-serial').setAttribute('aria-invalid', serial ? 'false' : 'true');
+
+  if (!barcode || !serial) {
+    errorEl.textContent = 'Chromebook barcode and serial cannot be blank.';
+    errorEl.classList.remove('hidden');
+    document.getElementById(barcode ? 'add-serial' : 'add-barcode').focus();
+    return;
+  }
+
   submitBtn.disabled = true;
   showGlobalLoading();
 

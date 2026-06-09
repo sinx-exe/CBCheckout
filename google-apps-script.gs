@@ -221,8 +221,12 @@ function addDevice_(barcode, serial) {
   const sheet = getSheet_(DEVICES_SHEET);
   const devices = getDeviceRows_();
   const nextId = devices.reduce((max, item) => Math.max(max, Number(item.device.ID) || 0), 0) + 1;
-  const cleanBarcode = String(barcode || '').trim() || `BC-${String(nextId).padStart(6, '0')}`;
-  const cleanSerial = String(serial || '').trim() || `CB-${String(nextId).padStart(6, '0')}`;
+  const cleanBarcode = String(barcode || '').trim();
+  const cleanSerial = String(serial || '').trim();
+
+  if (!cleanBarcode || !cleanSerial) {
+    throw new Error('Chromebook barcode and serial cannot be blank.');
+  }
 
   const barcodeDuplicate = devices.find(item =>
     String(item.device.Barcode || '').toLowerCase() === cleanBarcode.toLowerCase()

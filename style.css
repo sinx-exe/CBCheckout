@@ -186,6 +186,11 @@ button:disabled {
   background: color-mix(in srgb, var(--bg3) 88%, var(--accent) 12%);
 }
 
+.field-group input[aria-invalid="true"] {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-dim);
+}
+
 .field-group textarea:focus,
 .device-notes-section textarea:focus {
   border-color: var(--accent);
