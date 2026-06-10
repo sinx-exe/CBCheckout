@@ -159,7 +159,7 @@
 
   <div id="action-modal" class="modal-overlay hidden">
     <section class="modal-box" aria-labelledby="modal-title">
-      <button class="modal-close" type="button" onclick="closeModal('action-modal')" aria-label="Close">X</button>
+      <button class="modal-close" type="button" onclick="closeModal('action-modal')">CANCEL</button>
       <h2 class="modal-title" id="modal-title">CHECK OUT</h2>
       <p class="modal-desc" id="modal-desc">Assign a Chromebook number, barcode, or serial to a student.</p>
 
@@ -210,7 +210,7 @@
 
   <div id="device-modal" class="modal-overlay hidden">
     <section class="modal-box device-modal-box" aria-labelledby="dm-title">
-      <button class="modal-close" type="button" onclick="closeModal('device-modal')" aria-label="Close">X</button>
+      <button class="modal-close" type="button" onclick="closeModal('device-modal')">CANCEL</button>
       <div class="device-modal-header">
         <div class="device-number-badge" id="dm-number">01</div>
         <div>
@@ -278,8 +278,17 @@
       </div>
 
       <div class="device-danger-section">
-        <button class="btn-remove-device" type="button" onclick="removeOpenDevice()">REMOVE CHROMEBOOK</button>
-        <span class="device-danger-note">Only available Chromebooks can be removed.</span>
+        <div class="device-danger-copy">
+          <button class="btn-remove-device" type="button" onclick="requestRemoveOpenDevice()">REMOVE CHROMEBOOK</button>
+          <span class="device-danger-note">Only available Chromebooks can be removed.</span>
+        </div>
+        <div class="device-remove-confirm hidden" id="device-remove-confirm">
+          <span id="device-remove-confirm-text">Remove this Chromebook?</span>
+          <div class="device-remove-actions">
+            <button class="btn-confirm-remove" type="button" onclick="removeOpenDevice()">CONFIRM</button>
+            <button class="btn-cancel-remove" type="button" onclick="cancelRemoveOpenDevice()">CANCEL</button>
+          </div>
+        </div>
       </div>
 
       <div class="device-log-section">
@@ -296,14 +305,14 @@
 
   <div id="add-device-modal" class="modal-overlay hidden">
     <section class="modal-box" aria-labelledby="add-device-title">
-      <button class="modal-close" type="button" onclick="closeModal('add-device-modal')" aria-label="Close">X</button>
+      <button class="modal-close" type="button" onclick="closeModal('add-device-modal')">CANCEL</button>
       <h2 class="modal-title" id="add-device-title">ADD CHROMEBOOK</h2>
-      <p class="modal-desc">Create a new device row in the shared Google Sheet. Leave a field blank to auto-generate it.</p>
+      <p class="modal-desc">Creates new Chromebook entry. Barcode and serial are required.</p>
 
       <div class="field-group">
         <label for="add-barcode">CHROMEBOOK BARCODE</label>
         <div class="scan-input-row">
-          <input type="text" id="add-barcode" placeholder="Auto-generate if blank" autocomplete="off" autocapitalize="characters" inputmode="text" />
+          <input type="text" id="add-barcode" placeholder="Enter Chromebook barcode" autocomplete="off" autocapitalize="characters" inputmode="text" required />
           <button class="btn-scan" type="button" onclick="openScanner('add-barcode', 'Chromebook barcode')">
             <span aria-hidden="true">▦</span>
             <span>SCAN</span>
@@ -313,7 +322,7 @@
 
       <div class="field-group">
         <label for="add-serial">SERIAL</label>
-        <input type="text" id="add-serial" placeholder="Auto-generate if blank" autocomplete="off" autocapitalize="characters" inputmode="text" />
+        <input type="text" id="add-serial" placeholder="Enter serial number" autocomplete="off" autocapitalize="characters" inputmode="text" required />
       </div>
 
       <div id="add-device-error" class="login-error hidden"></div>
@@ -323,12 +332,22 @@
 
   <div id="scanner-modal" class="modal-overlay scanner-overlay hidden">
     <section class="modal-box scanner-box" aria-labelledby="scanner-title">
-      <button class="modal-close" type="button" onclick="closeScanner()" aria-label="Close scanner">X</button>
+      <button class="modal-close" type="button" onclick="closeScanner()">CANCEL</button>
       <h2 class="modal-title" id="scanner-title">SCAN BARCODE</h2>
       <p class="modal-desc" id="scanner-desc">Point the camera at the barcode.</p>
       <div class="scanner-frame">
         <video id="scanner-video" playsinline muted></video>
         <div class="scanner-reticle" aria-hidden="true"></div>
+        <div class="scanner-countdown hidden" id="scanner-countdown" aria-hidden="true">
+          <p class="scanner-countdown-hint">ENSURE FULL BARCODE IS VISIBLE IN FRAME</p>
+          <div class="scanner-countdown-ring">
+            <svg class="scanner-countdown-svg" viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="scanner-countdown-track" cx="60" cy="60" r="54"></circle>
+              <circle class="scanner-countdown-progress" id="scanner-countdown-progress" cx="60" cy="60" r="54"></circle>
+            </svg>
+            <span class="scanner-countdown-number" id="scanner-countdown-number">3</span>
+          </div>
+        </div>
       </div>
       <div class="scanner-status" id="scanner-status">Starting camera...</div>
       <button class="btn-submit scanner-cancel" type="button" onclick="closeScanner()">CANCEL SCAN</button>

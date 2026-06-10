@@ -186,6 +186,11 @@ button:disabled {
   background: color-mix(in srgb, var(--bg3) 88%, var(--accent) 12%);
 }
 
+.field-group input[aria-invalid="true"] {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px var(--red-dim);
+}
+
 .field-group textarea:focus,
 .device-notes-section textarea:focus {
   border-color: var(--accent);
@@ -383,6 +388,7 @@ button:disabled {
 }
 
 .action-btn {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 18px;
@@ -392,19 +398,59 @@ button:disabled {
   background: var(--bg2);
   cursor: pointer;
   box-shadow: var(--shadow-soft);
-  transition: border-color 0.2s var(--ease), background 0.2s var(--ease), transform 0.18s var(--ease), box-shadow 0.18s var(--ease);
+  transition: border-color 0.2s var(--ease), transform 0.18s var(--ease), box-shadow 0.18s var(--ease), color 0.2s var(--ease);
   text-align: left;
   min-height: 92px;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.action-btn > * {
+  position: relative;
+  z-index: 1;
+}
+
+.action-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.42s var(--ease), background-color 0.2s var(--ease);
+  z-index: 0;
+}
+
+.checkout-btn::before { background: var(--red); }
+.checkin-btn::before  { background: var(--green); }
+
+.checkout-btn:hover::before,
+.checkin-btn:hover::before {
+  transform: scaleX(1);
+}
+
+.checkout-btn:hover,
+.checkin-btn:hover {
+  border-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  color: #fff;
+}
+
+.checkout-btn:hover .action-label,
+.checkin-btn:hover .action-label,
+.checkout-btn:hover .action-desc,
+.checkin-btn:hover .action-desc {
+  color: #fff;
 }
 
 .checkout-btn { border-left: 3px solid var(--red); }
 .checkin-btn  { border-left: 3px solid var(--green); }
 
-.checkout-btn:hover { background: var(--red-dim); border-color: var(--red); transform: translateY(-2px); box-shadow: var(--shadow-hover); }
-.checkin-btn:hover  { background: var(--green-dim); border-color: var(--green); transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.checkout-btn .action-icon { color: var(--red); transition: color 0.2s var(--ease); }
+.checkin-btn  .action-icon { color: var(--green); transition: color 0.2s var(--ease); }
 
-.checkout-btn .action-icon { color: var(--red); }
-.checkin-btn  .action-icon { color: var(--green); }
+.checkout-btn:hover .action-icon { color: #fff; }
+.checkin-btn:hover  .action-icon { color: #fff; }
 
 .action-label {
   display: block;
@@ -488,7 +534,7 @@ button:disabled {
   font-family: 'Roboto Mono', monospace;
   font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.0 8em;
   white-space: nowrap;
 }
 
@@ -777,15 +823,20 @@ button:disabled {
   top: 14px; right: 14px;
   background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 50%;
-  width: 30px; height: 30px;
+  border-radius: var(--radius-sm);
+  min-width: 72px;
+  min-height: 32px;
+  padding: 7px 11px;
   display: flex; align-items: center; justify-content: center;
   color: var(--text2);
   cursor: pointer;
-  font-size: 0.75rem;
-  transition: border-color 0.2s var(--ease), color 0.2s var(--ease), background 0.2s var(--ease), transform 0.16s var(--ease);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  transition: border-color 0.2s var(--ease), color 0.2s var(--ease), background 0.2s var(--ease);
 }
-.modal-close:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); transform: rotate(4deg); }
+.modal-close:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
 
 .modal-title {
   font-size: 1.1rem;
@@ -901,6 +952,100 @@ button:disabled {
   box-shadow: 0 0 0 999px rgba(0,0,0,0.24), 0 0 18px var(--accent-glow);
   pointer-events: none;
   animation: scanPulse 1.8s ease-in-out infinite;
+}
+
+.scanner-countdown {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 18px;
+  background: transparent;
+  z-index: 2;
+  text-align: center;
+  pointer-events: none;
+  animation: countdownFadeIn 0.22s var(--ease);
+}
+
+.scanner-countdown-hint {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #fff;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.85),
+    0 0 8px rgba(0, 0, 0, 0.6),
+    0 0 2px rgba(0, 0, 0, 0.9);
+  max-width: 32ch;
+  line-height: 1.35;
+}
+
+.scanner-countdown-ring {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-countdown-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.scanner-countdown-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-width: 6;
+}
+
+.scanner-countdown-progress {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 339.292;
+  stroke-dashoffset: 339.292;
+}
+
+.scanner-countdown-progress.is-running {
+  animation: countdownRing 1s linear forwards;
+}
+
+.scanner-countdown-number {
+  position: relative;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 3.2rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 0 0 18px var(--accent-glow);
+  animation: countdownPop 1s ease-out forwards;
+}
+
+@keyframes countdownRing {
+  from { stroke-dashoffset: 339.292; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@keyframes countdownPop {
+  0%   { transform: scale(0.6); opacity: 0.2; }
+  20%  { transform: scale(1.18); opacity: 1; }
+  60%  { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.94); opacity: 0.85; }
+}
+
+@keyframes countdownFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .scanner-status {
@@ -1039,6 +1184,7 @@ button:disabled {
 
 .device-danger-section {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -1047,6 +1193,14 @@ button:disabled {
   border: 1px solid var(--red);
   border-radius: var(--radius-sm);
   background: var(--red-dim);
+}
+
+.device-danger-copy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
 }
 
 .btn-remove-device {
@@ -1073,6 +1227,65 @@ button:disabled {
   font-size: 0.68rem;
   line-height: 1.35;
   text-align: right;
+}
+
+.device-remove-confirm {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--red) 45%, transparent);
+  color: var(--text);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  animation: loaderIn 0.2s var(--ease);
+}
+
+.device-remove-confirm.is-hiding {
+  animation: loaderOut 0.18s var(--ease) forwards;
+}
+
+.device-remove-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-confirm-remove,
+.btn-cancel-remove {
+  min-height: 32px;
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease), background 0.18s var(--ease), color 0.18s var(--ease), transform 0.16s var(--ease);
+}
+
+.btn-confirm-remove {
+  border: 1px solid var(--red);
+  background: var(--red);
+  color: #fff;
+}
+
+.btn-cancel-remove {
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text2);
+}
+
+.btn-confirm-remove:hover,
+.btn-cancel-remove:hover {
+  transform: translateY(-1px);
+}
+
+.btn-cancel-remove:hover {
+  border-color: var(--border2);
+  color: var(--text);
 }
 
 .detail-label {
@@ -1605,12 +1818,12 @@ button:disabled {
   .modal-close {
     top: 12px;
     right: 12px;
-    width: 38px;
-    height: 38px;
+    min-width: 78px;
+    min-height: 38px;
   }
 
   .modal-title {
-    max-width: calc(100% - 48px);
+    max-width: calc(100% - 94px);
     font-size: 1rem;
   }
 
@@ -1696,6 +1909,21 @@ button:disabled {
   .device-danger-section {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .device-danger-copy,
+  .device-remove-confirm {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .device-danger-copy {
+    flex-direction: column;
+  }
+
+  .device-remove-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
   .device-danger-note {

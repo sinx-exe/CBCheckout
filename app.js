@@ -10,7 +10,7 @@ const LOGIN_KEY = 'cbcheckout-current-user';
 // Paste your deployed Google Apps Script Web App URL here.
 // It should look like:
 // https://script.google.com/macros/s/AKfycb.../exec
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuZNWZuWjo4CO3z-zVjQ2o2L39WCWRCC1vHCJOKnMspiKYuEo-W71bpUcQjM0j8_FA/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbytbjPnNzdbz-YSr9lehvFoTQe0dzMZ_rfSTVJwa3aAo1Ikz78tBi08WXQthXnZ-rH8/exec';
 
 const SYNC_INTERVAL_MS = 10000;
 const UI_EXIT_MS = 220;
@@ -24,8 +24,11 @@ let scannerStream = null;
 let scannerDetector = null;
 let scannerTargetInputId = null;
 let scannerAnimationId = null;
-let scannerCropCanvas = null;
 let scannerActive = false;
+let scannerCountdownTimers = [];
+let scannerPendingValue = null;
+const SCANNER_COUNTDOWN_MS = 750;
+const SCANNER_COUNTDOWN_RING_CIRCUMFERENCE = 339.292;
 let sheetConnected = false;
 let syncTimer = null;
 
@@ -309,6 +312,8 @@ function openAddDeviceModal() {
   document.getElementById('add-barcode').value = '';
   document.getElementById('add-serial').value = '';
   document.getElementById('add-device-error').classList.add('hidden');
+  document.getElementById('add-barcode').removeAttribute('aria-invalid');
+  document.getElementById('add-serial').removeAttribute('aria-invalid');
   showAnimatedElement(document.getElementById('add-device-modal'), 'modal-closing');
   setTimeout(() => document.getElementById('add-barcode').focus(), 100);
 }
@@ -322,6 +327,17 @@ async function submitAddDevice() {
   const serial = document.getElementById('add-serial').value.trim();
 
   errorEl.classList.add('hidden');
+
+  document.getElementById('add-barcode').setAttribute('aria-invalid', barcode ? 'false' : 'true');
+  document.getElementById('add-serial').setAttribute('aria-invalid', serial ? 'false' : 'true');
+
+  if (!barcode || !serial) {
+    errorEl.textContent = 'Chromebook barcode and serial cannot be blank.';
+    errorEl.classList.remove('hidden');
+    document.getElementById(barcode ? 'add-serial' : 'add-barcode').focus();
+    return;
+  }
+
   submitBtn.disabled = true;
   showGlobalLoading();
 
@@ -439,7 +455,7 @@ async function openScanner(targetInputId, label) {
   const video = document.getElementById('scanner-video');
 
   title.textContent = `SCAN ${label.toUpperCase()}`;
-  desc.textContent = `Center the ${label.toLowerCase()} inside the blue scan box.`;
+  desc.textContent = `Point the camera at the ${label.toLowerCase()}.`;
   status.textContent = 'Starting camera...';
   showAnimatedElement(modal, 'modal-closing');
 
@@ -469,7 +485,7 @@ async function openScanner(targetInputId, label) {
 
     video.srcObject = scannerStream;
     await video.play();
-    status.textContent = 'Scanning inside the blue box...';
+    status.textContent = 'Scanning...';
     scanVideoFrame();
   } catch (err) {
     status.textContent = `Unable to start scanner: ${err.message || 'camera permission was denied'}.`;
@@ -495,78 +511,152 @@ async function scanVideoFrame() {
 
   try {
     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      const scanSource = getScannerScanSource(video);
-      if (!scanSource) {
-        scannerAnimationId = requestAnimationFrame(scanVideoFrame);
-        return;
-      }
-
-      const barcodes = await scannerDetector.detect(scanSource);
+      const barcodes = await scannerDetector.detect(video);
       if (barcodes.length > 0) {
         const value = (barcodes[0].rawValue || '').trim();
         if (value) {
-          fillScannedValue(value);
-          status.textContent = `Scanned ${value}`;
-          closeScanner();
+          status.textContent = `Barcode in frame — starting countdown.`;
+          runScannerCountdown();
           return;
         }
       }
     }
   } catch (err) {
-    status.textContent = 'Scanner paused. Move the barcode into the blue box.';
+    status.textContent = 'Scanner paused. Move the barcode into the camera frame.';
   }
 
   scannerAnimationId = requestAnimationFrame(scanVideoFrame);
 }
 
-function getScannerScanSource(video) {
-  const reticle = document.querySelector('.scanner-reticle');
-  if (!reticle || !video.videoWidth || !video.videoHeight) return null;
+function runScannerCountdown() {
+  // Pause live detection while the countdown plays.
+  if (scannerAnimationId) {
+    cancelAnimationFrame(scannerAnimationId);
+    scannerAnimationId = null;
+  }
+  scannerPendingValue = null;
 
-  const videoRect = video.getBoundingClientRect();
-  const reticleRect = reticle.getBoundingClientRect();
-  if (!videoRect.width || !videoRect.height || !reticleRect.width || !reticleRect.height) return null;
+  const overlay  = document.getElementById('scanner-countdown');
+  const numberEl = document.getElementById('scanner-countdown-number');
+  const ringEl   = document.getElementById('scanner-countdown-progress');
+  const status   = document.getElementById('scanner-status');
+  if (!overlay || !numberEl || !ringEl) {
+    // Fallback: just snapshot now and try to detect.
+    captureAndDetectSnapshot().then(({ value }) => {
+      if (value) {
+        fillScannedValue(value);
+        if (status) status.textContent = `Scanned ${value}`;
+      }
+      closeScanner();
+    });
+    return;
+  }
 
-  const scale = Math.max(videoRect.width / video.videoWidth, videoRect.height / video.videoHeight);
-  const renderedWidth = video.videoWidth * scale;
-  const renderedHeight = video.videoHeight * scale;
-  const offsetX = (videoRect.width - renderedWidth) / 2;
-  const offsetY = (videoRect.height - renderedHeight) / 2;
+  if (status) status.textContent = 'Hold steady...';
 
-  const scanLeft = reticleRect.left - videoRect.left;
-  const scanTop = reticleRect.top - videoRect.top;
-  const sourceLeft = (scanLeft - offsetX) / scale;
-  const sourceTop = (scanTop - offsetY) / scale;
-  const sourceRight = (scanLeft + reticleRect.width - offsetX) / scale;
-  const sourceBottom = (scanTop + reticleRect.height - offsetY) / scale;
+  clearScannerCountdownTimers();
+  overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-hidden', 'false');
 
-  const sourceX = Math.max(0, Math.floor(sourceLeft));
-  const sourceY = Math.max(0, Math.floor(sourceTop));
-  const sourceWidth = Math.min(video.videoWidth - sourceX, Math.ceil(sourceRight) - sourceX);
-  const sourceHeight = Math.min(video.videoHeight - sourceY, Math.ceil(sourceBottom) - sourceY);
-  if (sourceWidth <= 0 || sourceHeight <= 0) return null;
+  const sequence = [3, 2, 1];
+  sequence.forEach((count, index) => {
+    const stepTimer = window.setTimeout(() => {
+      if (!scannerActive) return;
+      numberEl.textContent = String(count);
+      // Force restart of the ring animation by toggling the class.
+      ringEl.classList.remove('is-running');
+      // Reflow to restart the CSS animation cleanly.
+      void ringEl.getBoundingClientRect();
+      ringEl.classList.add('is-running');
 
-  if (!scannerCropCanvas) scannerCropCanvas = document.createElement('canvas');
-  scannerCropCanvas.width = sourceWidth;
-  scannerCropCanvas.height = sourceHeight;
+      if (index === sequence.length - 1) {
+        const finishTimer = window.setTimeout(() => {
+          captureAndDetectSnapshot().then(({ value }) => {
+            const statusEl = document.getElementById('scanner-status');
+            if (value) {
+              scannerPendingValue = value;
+              finalizeScannerCountdown();
+            } else {
+              // Nothing found in the snapshot — let the user try again.
+              if (statusEl) statusEl.textContent = 'No barcode found in the photo. Try again.';
+              hideScannerCountdown();
+              if (scannerActive) scanVideoFrame();
+            }
+          });
+        }, SCANNER_COUNTDOWN_MS);
+        scannerCountdownTimers.push(finishTimer);
+      }
+    }, index * SCANNER_COUNTDOWN_MS);
+    scannerCountdownTimers.push(stepTimer);
+  });
+}
 
-  const context = scannerCropCanvas.getContext('2d', { willReadFrequently: true });
-  if (!context) return null;
+async function captureAndDetectSnapshot() {
+  const video = document.getElementById('scanner-video');
+  const status = document.getElementById('scanner-status');
+  if (!video || !scannerDetector) return { value: null };
 
-  context.clearRect(0, 0, scannerCropCanvas.width, scannerCropCanvas.height);
-  context.drawImage(
-    video,
-    sourceX,
-    sourceY,
-    sourceWidth,
-    sourceHeight,
-    0,
-    0,
-    scannerCropCanvas.width,
-    scannerCropCanvas.height
-  );
+  if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+    return { value: null };
+  }
 
-  return scannerCropCanvas;
+  const width = video.videoWidth;
+  const height = video.videoHeight;
+  if (!width || !height) return { value: null };
+
+  let canvas = document.getElementById('scanner-snapshot-canvas');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'scanner-snapshot-canvas';
+    canvas.style.display = 'none';
+    document.body.appendChild(canvas);
+  }
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return { value: null };
+  ctx.drawImage(video, 0, 0, width, height);
+
+  try {
+    const barcodes = await scannerDetector.detect(canvas);
+    const raw = barcodes.length > 0 ? (barcodes[0].rawValue || '').trim() : '';
+    if (raw && status) status.textContent = `Detected ${raw}`;
+    return { value: raw || null };
+  } catch (err) {
+    if (status) status.textContent = 'Detection failed. Try again.';
+    return { value: null };
+  }
+}
+
+function finalizeScannerCountdown() {
+  const value = scannerPendingValue;
+  clearScannerCountdownTimers();
+  hideScannerCountdown();
+  scannerPendingValue = null;
+  if (value) {
+    fillScannedValue(value);
+    const status = document.getElementById('scanner-status');
+    if (status) status.textContent = `Scanned ${value}`;
+  }
+  closeScanner();
+}
+
+function hideScannerCountdown() {
+  const overlay = document.getElementById('scanner-countdown');
+  const numberEl = document.getElementById('scanner-countdown-number');
+  const ringEl = document.getElementById('scanner-countdown-progress');
+  if (overlay) {
+    overlay.classList.add('hidden');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+  if (ringEl) ringEl.classList.remove('is-running');
+  if (numberEl) numberEl.textContent = '3';
+}
+
+function clearScannerCountdownTimers() {
+  scannerCountdownTimers.forEach(id => window.clearTimeout(id));
+  scannerCountdownTimers = [];
 }
 
 function fillScannedValue(value) {
@@ -584,6 +674,9 @@ function closeScanner() {
     cancelAnimationFrame(scannerAnimationId);
     scannerAnimationId = null;
   }
+  clearScannerCountdownTimers();
+  scannerPendingValue = null;
+  hideScannerCountdown();
   stopScannerStream();
 
   const modal = document.getElementById('scanner-modal');
@@ -593,7 +686,6 @@ function closeScanner() {
 
   scannerDetector = null;
   scannerTargetInputId = null;
-  scannerCropCanvas = null;
 }
 
 function stopScannerStream() {
@@ -615,6 +707,7 @@ function openDeviceModal(id) {
   document.getElementById('dm-notes-input').value   = cb.notes || '';
   document.getElementById('dm-notes-status').textContent = (cb.notes || '').trim() ? 'Saved note' : 'No note';
   document.getElementById('dm-notes-error').classList.add('hidden');
+  cancelRemoveOpenDevice();
 
   const pill = document.getElementById('dm-status-pill');
   if (cb.checkedOut) {
@@ -685,14 +778,26 @@ async function saveNotes() {
   }
 }
 
-async function removeOpenDevice() {
+function requestRemoveOpenDevice() {
   if (!isLoggedIn) return;
   const cb = chromebooks.find(c => c.id === openDeviceIndex);
   if (!cb) return;
 
-  if (!window.confirm(`Remove Chromebook #${cb.id} from inventory? This will delete it from the Devices sheet.`)) {
-    return;
-  }
+  const confirmBox = document.getElementById('device-remove-confirm');
+  const confirmText = document.getElementById('device-remove-confirm-text');
+  if (confirmText) confirmText.textContent = `Remove Chromebook #${cb.id} from inventory?`;
+  if (confirmBox) showAnimatedElement(confirmBox, 'is-hiding');
+}
+
+function cancelRemoveOpenDevice() {
+  const confirmBox = document.getElementById('device-remove-confirm');
+  if (confirmBox) hideAnimatedElement(confirmBox, 'is-hiding', UI_EXIT_MS);
+}
+
+async function removeOpenDevice() {
+  if (!isLoggedIn) return;
+  const cb = chromebooks.find(c => c.id === openDeviceIndex);
+  if (!cb) return;
 
   showGlobalLoading();
 
