@@ -511,21 +511,99 @@ async function scanVideoFrame() {
 
   try {
     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      const barcodes = await scannerDetector.detect(video);
+      const scanSource = drawScannerRegionToCanvas(video);
+      const barcodes = scanSource ? await scannerDetector.detect(scanSource) : [];
       if (barcodes.length > 0) {
         const value = (barcodes[0].rawValue || '').trim();
         if (value) {
-          status.textContent = `Barcode in frame — starting countdown.`;
+          status.textContent = `Barcode in highlighted region - starting countdown.`;
           runScannerCountdown();
           return;
         }
       }
     }
   } catch (err) {
-    status.textContent = 'Scanner paused. Move the barcode into the camera frame.';
+    status.textContent = 'Scanner paused. Move the barcode into the highlighted region.';
   }
 
   scannerAnimationId = requestAnimationFrame(scanVideoFrame);
+}
+
+function drawScannerRegionToCanvas(video) {
+  if (!video || !video.videoWidth || !video.videoHeight) return null;
+
+  const crop = getScannerRegionCrop(video);
+  if (!crop) return null;
+
+  let canvas = document.getElementById('scanner-snapshot-canvas');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'scanner-snapshot-canvas';
+    canvas.style.display = 'none';
+    document.body.appendChild(canvas);
+  }
+
+  canvas.width = crop.width;
+  canvas.height = crop.height;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+
+  ctx.clearRect(0, 0, crop.width, crop.height);
+  ctx.drawImage(
+    video,
+    crop.x,
+    crop.y,
+    crop.width,
+    crop.height,
+    0,
+    0,
+    crop.width,
+    crop.height
+  );
+
+  return canvas;
+}
+
+function getScannerRegionCrop(video) {
+  const frame = video.closest('.scanner-frame');
+  const reticle = frame ? frame.querySelector('.scanner-reticle') : null;
+  if (!reticle) {
+    return {
+      x: 0,
+      y: 0,
+      width: video.videoWidth,
+      height: video.videoHeight,
+    };
+  }
+
+  const videoRect = video.getBoundingClientRect();
+  const reticleRect = reticle.getBoundingClientRect();
+  if (!videoRect.width || !videoRect.height || !reticleRect.width || !reticleRect.height) return null;
+
+  const scale = Math.max(
+    videoRect.width / video.videoWidth,
+    videoRect.height / video.videoHeight
+  );
+  const renderedWidth = video.videoWidth * scale;
+  const renderedHeight = video.videoHeight * scale;
+  const offsetX = (videoRect.width - renderedWidth) / 2;
+  const offsetY = (videoRect.height - renderedHeight) / 2;
+
+  const rawX = (reticleRect.left - videoRect.left - offsetX) / scale;
+  const rawY = (reticleRect.top - videoRect.top - offsetY) / scale;
+  const rawWidth = reticleRect.width / scale;
+  const rawHeight = reticleRect.height / scale;
+
+  const x = Math.max(0, Math.floor(rawX));
+  const y = Math.max(0, Math.floor(rawY));
+  const right = Math.min(video.videoWidth, Math.ceil(rawX + rawWidth));
+  const bottom = Math.min(video.videoHeight, Math.ceil(rawY + rawHeight));
+  const width = right - x;
+  const height = bottom - y;
+
+  if (width < 1 || height < 1) return null;
+  return { x, y, width, height };
 }
 
 function runScannerCountdown() {
@@ -600,23 +678,8 @@ async function captureAndDetectSnapshot() {
     return { value: null };
   }
 
-  const width = video.videoWidth;
-  const height = video.videoHeight;
-  if (!width || !height) return { value: null };
-
-  let canvas = document.getElementById('scanner-snapshot-canvas');
-  if (!canvas) {
-    canvas = document.createElement('canvas');
-    canvas.id = 'scanner-snapshot-canvas';
-    canvas.style.display = 'none';
-    document.body.appendChild(canvas);
-  }
-  canvas.width = width;
-  canvas.height = height;
-
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return { value: null };
-  ctx.drawImage(video, 0, 0, width, height);
+  const canvas = drawScannerRegionToCanvas(video);
+  if (!canvas) return { value: null };
 
   try {
     const barcodes = await scannerDetector.detect(canvas);
