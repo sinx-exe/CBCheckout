@@ -511,15 +511,11 @@ async function scanVideoFrame() {
 
   try {
     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      const scanSource = drawScannerRegionToCanvas(video);
-      const barcodes = scanSource ? await scannerDetector.detect(scanSource) : [];
-      if (barcodes.length > 0) {
-        const value = (barcodes[0].rawValue || '').trim();
-        if (value) {
-          status.textContent = `Barcode in highlighted region - starting countdown.`;
-          runScannerCountdown();
-          return;
-        }
+      const match = await detectBarcodeInScannerRegion(video);
+      if (match.value) {
+        status.textContent = `Barcode in highlighted region - starting countdown.`;
+        runScannerCountdown();
+        return;
       }
     }
   } catch (err) {
@@ -529,40 +525,60 @@ async function scanVideoFrame() {
   scannerAnimationId = requestAnimationFrame(scanVideoFrame);
 }
 
-function drawScannerRegionToCanvas(video) {
-  if (!video || !video.videoWidth || !video.videoHeight) return null;
-
-  const crop = getScannerRegionCrop(video);
-  if (!crop) return null;
-
-  let canvas = document.getElementById('scanner-snapshot-canvas');
-  if (!canvas) {
-    canvas = document.createElement('canvas');
-    canvas.id = 'scanner-snapshot-canvas';
-    canvas.style.display = 'none';
-    document.body.appendChild(canvas);
+async function detectBarcodeInScannerRegion(video) {
+  if (!video || !scannerDetector || !video.videoWidth || !video.videoHeight) {
+    return { value: null };
   }
 
-  canvas.width = crop.width;
-  canvas.height = crop.height;
+  const crop = getScannerRegionCrop(video);
+  if (!crop) return { value: null };
 
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
+  const barcodes = await scannerDetector.detect(video);
+  const match = findBarcodeInsideScannerCrop(barcodes, crop);
+  return { value: match ? (match.rawValue || '').trim() || null : null };
+}
 
-  ctx.clearRect(0, 0, crop.width, crop.height);
-  ctx.drawImage(
-    video,
-    crop.x,
-    crop.y,
-    crop.width,
-    crop.height,
-    0,
-    0,
-    crop.width,
-    crop.height
+function findBarcodeInsideScannerCrop(barcodes, crop) {
+  if (!Array.isArray(barcodes) || !crop) return null;
+
+  return barcodes.find(barcode => isBarcodeInsideScannerCrop(barcode, crop)) || null;
+}
+
+function isBarcodeInsideScannerCrop(barcode, crop) {
+  const bounds = getBarcodeBounds(barcode);
+  if (!bounds) return false;
+
+  const centerX = bounds.x + bounds.width / 2;
+  const centerY = bounds.y + bounds.height / 2;
+  return (
+    centerX >= crop.x &&
+    centerX <= crop.x + crop.width &&
+    centerY >= crop.y &&
+    centerY <= crop.y + crop.height
   );
+}
 
-  return canvas;
+function getBarcodeBounds(barcode) {
+  if (barcode && barcode.boundingBox) {
+    const { x, y, width, height } = barcode.boundingBox;
+    if ([x, y, width, height].every(Number.isFinite) && width > 0 && height > 0) {
+      return { x, y, width, height };
+    }
+  }
+
+  if (barcode && Array.isArray(barcode.cornerPoints) && barcode.cornerPoints.length) {
+    const xs = barcode.cornerPoints.map(point => point.x).filter(Number.isFinite);
+    const ys = barcode.cornerPoints.map(point => point.y).filter(Number.isFinite);
+    if (xs.length && ys.length) {
+      const left = Math.min(...xs);
+      const top = Math.min(...ys);
+      const right = Math.max(...xs);
+      const bottom = Math.max(...ys);
+      return { x: left, y: top, width: right - left, height: bottom - top };
+    }
+  }
+
+  return null;
 }
 
 function getScannerRegionCrop(video) {
@@ -678,14 +694,10 @@ async function captureAndDetectSnapshot() {
     return { value: null };
   }
 
-  const canvas = drawScannerRegionToCanvas(video);
-  if (!canvas) return { value: null };
-
   try {
-    const barcodes = await scannerDetector.detect(canvas);
-    const raw = barcodes.length > 0 ? (barcodes[0].rawValue || '').trim() : '';
-    if (raw && status) status.textContent = `Detected ${raw}`;
-    return { value: raw || null };
+    const { value } = await detectBarcodeInScannerRegion(video);
+    if (value && status) status.textContent = `Detected ${value}`;
+    return { value };
   } catch (err) {
     if (status) status.textContent = 'Detection failed. Try again.';
     return { value: null };
