@@ -24,6 +24,7 @@ let scannerStream = null;
 let scannerDetector = null;
 let scannerTargetInputId = null;
 let scannerAnimationId = null;
+let scannerCropCanvas = null;
 let scannerActive = false;
 let sheetConnected = false;
 let syncTimer = null;
@@ -438,7 +439,7 @@ async function openScanner(targetInputId, label) {
   const video = document.getElementById('scanner-video');
 
   title.textContent = `SCAN ${label.toUpperCase()}`;
-  desc.textContent = `Point the camera at the ${label.toLowerCase()}.`;
+  desc.textContent = `Center the ${label.toLowerCase()} inside the blue scan box.`;
   status.textContent = 'Starting camera...';
   showAnimatedElement(modal, 'modal-closing');
 
@@ -468,7 +469,7 @@ async function openScanner(targetInputId, label) {
 
     video.srcObject = scannerStream;
     await video.play();
-    status.textContent = 'Scanning...';
+    status.textContent = 'Scanning inside the blue box...';
     scanVideoFrame();
   } catch (err) {
     status.textContent = `Unable to start scanner: ${err.message || 'camera permission was denied'}.`;
@@ -494,7 +495,13 @@ async function scanVideoFrame() {
 
   try {
     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      const barcodes = await scannerDetector.detect(video);
+      const scanSource = getScannerScanSource(video);
+      if (!scanSource) {
+        scannerAnimationId = requestAnimationFrame(scanVideoFrame);
+        return;
+      }
+
+      const barcodes = await scannerDetector.detect(scanSource);
       if (barcodes.length > 0) {
         const value = (barcodes[0].rawValue || '').trim();
         if (value) {
@@ -506,10 +513,60 @@ async function scanVideoFrame() {
       }
     }
   } catch (err) {
-    status.textContent = 'Scanner paused. Move the barcode into the camera frame.';
+    status.textContent = 'Scanner paused. Move the barcode into the blue box.';
   }
 
   scannerAnimationId = requestAnimationFrame(scanVideoFrame);
+}
+
+function getScannerScanSource(video) {
+  const reticle = document.querySelector('.scanner-reticle');
+  if (!reticle || !video.videoWidth || !video.videoHeight) return null;
+
+  const videoRect = video.getBoundingClientRect();
+  const reticleRect = reticle.getBoundingClientRect();
+  if (!videoRect.width || !videoRect.height || !reticleRect.width || !reticleRect.height) return null;
+
+  const scale = Math.max(videoRect.width / video.videoWidth, videoRect.height / video.videoHeight);
+  const renderedWidth = video.videoWidth * scale;
+  const renderedHeight = video.videoHeight * scale;
+  const offsetX = (videoRect.width - renderedWidth) / 2;
+  const offsetY = (videoRect.height - renderedHeight) / 2;
+
+  const scanLeft = reticleRect.left - videoRect.left;
+  const scanTop = reticleRect.top - videoRect.top;
+  const sourceLeft = (scanLeft - offsetX) / scale;
+  const sourceTop = (scanTop - offsetY) / scale;
+  const sourceRight = (scanLeft + reticleRect.width - offsetX) / scale;
+  const sourceBottom = (scanTop + reticleRect.height - offsetY) / scale;
+
+  const sourceX = Math.max(0, Math.floor(sourceLeft));
+  const sourceY = Math.max(0, Math.floor(sourceTop));
+  const sourceWidth = Math.min(video.videoWidth - sourceX, Math.ceil(sourceRight) - sourceX);
+  const sourceHeight = Math.min(video.videoHeight - sourceY, Math.ceil(sourceBottom) - sourceY);
+  if (sourceWidth <= 0 || sourceHeight <= 0) return null;
+
+  if (!scannerCropCanvas) scannerCropCanvas = document.createElement('canvas');
+  scannerCropCanvas.width = sourceWidth;
+  scannerCropCanvas.height = sourceHeight;
+
+  const context = scannerCropCanvas.getContext('2d', { willReadFrequently: true });
+  if (!context) return null;
+
+  context.clearRect(0, 0, scannerCropCanvas.width, scannerCropCanvas.height);
+  context.drawImage(
+    video,
+    sourceX,
+    sourceY,
+    sourceWidth,
+    sourceHeight,
+    0,
+    0,
+    scannerCropCanvas.width,
+    scannerCropCanvas.height
+  );
+
+  return scannerCropCanvas;
 }
 
 function fillScannedValue(value) {
@@ -536,6 +593,7 @@ function closeScanner() {
 
   scannerDetector = null;
   scannerTargetInputId = null;
+  scannerCropCanvas = null;
 }
 
 function stopScannerStream() {
