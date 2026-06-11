@@ -94,48 +94,6 @@ button:disabled {
 .hidden { display: none !important; }
 .mono { font-family: 'Roboto Mono', monospace; }
 
-/* ── LOGIN OVERLAY ── */
-.login-overlay {
-  position: fixed; inset: 0;
-  background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 1000;
-}
-
-.login-box {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 48px 40px;
-  width: 100%; max-width: 400px;
-  box-shadow: var(--shadow);
-  animation: fadeUp 0.46s var(--ease);
-}
-
-.login-logo {
-  color: var(--accent);
-  margin-bottom: 20px;
-  display: flex; justify-content: center;
-  filter: drop-shadow(0 0 16px var(--accent-glow));
-}
-
-.login-title {
-  font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-align: center;
-  color: var(--text);
-  margin-bottom: 6px;
-}
-
-.login-subtitle {
-  font-size: 0.8rem;
-  color: var(--text2);
-  text-align: center;
-  letter-spacing: 0.05em;
-  margin-bottom: 32px;
-}
-
 /* ── FIELD GROUP ── */
 .field-group {
   margin-bottom: 18px;
@@ -239,24 +197,6 @@ button:disabled {
   margin-bottom: 16px;
 }
 
-.btn-login {
-  width: 100%;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-sm);
-  padding: 13px;
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  cursor: pointer;
-  box-shadow: 0 8px 18px var(--accent-glow);
-  transition: opacity 0.2s var(--ease), transform 0.16s var(--ease), box-shadow 0.2s var(--ease);
-}
-.btn-login:hover { opacity: 0.94; transform: translateY(-1px); box-shadow: 0 12px 24px var(--accent-glow); }
-.btn-login:active { transform: scale(0.98); }
-
 /* ── APP SHELL ── */
 .app {
   max-width: 1100px;
@@ -304,20 +244,6 @@ button:disabled {
   gap: 10px;
 }
 
-.user-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 0.75rem;
-  color: var(--text2);
-  letter-spacing: 0.05em;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
-}
-
 .sync-badge {
   display: inline-flex;
   align-items: center;
@@ -355,29 +281,6 @@ button:disabled {
   transition: border-color 0.2s var(--ease), background 0.2s var(--ease), transform 0.16s var(--ease);
 }
 .btn-theme:hover { border-color: var(--accent); background: var(--accent-glow); transform: translateY(-1px); }
-
-.btn-logout {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 7px 14px;
-  color: var(--text2);
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  transition: border-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.16s var(--ease), background 0.2s var(--ease);
-}
-.btn-logout:hover {
-  border-color: var(--red);
-  color: var(--red);
-  background: var(--red-dim);
-  transform: translateY(-1px);
-}
 
 /* ── ACTIONS ── */
 .actions-section {
@@ -1558,18 +1461,6 @@ button:disabled {
     min-height: 100dvh;
   }
 
-  .login-overlay {
-    align-items: stretch;
-    padding: 16px;
-  }
-
-  .login-box {
-    align-self: center;
-    padding: 34px 22px;
-    max-width: 100%;
-  }
-
-  .login-title,
   .app-title,
   .modal-title {
     letter-spacing: 0.08em;
@@ -1613,25 +1504,15 @@ button:disabled {
   .header-right {
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr 1fr 44px auto;
+    grid-template-columns: 1fr 44px;
     gap: 8px;
   }
 
-  .user-badge,
-  .sync-badge,
-  .btn-theme,
-  .btn-logout {
-    min-height: 42px;
-  }
-
-  .user-badge,
   .sync-badge {
+    min-height: 42px;
     min-width: 0;
     justify-content: center;
     border-radius: var(--radius-sm);
-  }
-
-  .sync-badge {
     padding: 6px 8px;
     font-size: 0.58rem;
     letter-spacing: 0.04em;
@@ -1639,11 +1520,6 @@ button:disabled {
 
   .btn-theme {
     padding: 0;
-  }
-
-  .btn-logout {
-    justify-content: center;
-    padding: 0 12px;
   }
 
   .actions-section {
@@ -1989,11 +1865,10 @@ button:disabled {
   }
 
   .header-right {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 44px;
   }
 
-  .btn-theme,
-  .btn-logout {
+  .btn-theme {
     width: 100%;
   }
 }

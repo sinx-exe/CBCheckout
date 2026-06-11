@@ -3,9 +3,7 @@
 // =============================================
 
 const TOTAL = 32;
-const CREDS = { username: "username", password: "password" };
 const STORAGE_KEY = 'cbcheckout-state-v1';
-const LOGIN_KEY = 'cbcheckout-current-user';
 
 // Paste your deployed Google Apps Script Web App URL here.
 // It should look like:
@@ -17,7 +15,6 @@ const UI_EXIT_MS = 220;
 const uiHideTimers = new WeakMap();
 
 // ── STATE ──
-let isLoggedIn = false;
 let currentAction = null;
 let openDeviceIndex = null;
 let scannerStream = null;
@@ -57,16 +54,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderLog();
   connectSheet();
 
-  if (loadLogin()) {
-    showApp(CREDS.username);
-  }
-
-  ['login-username', 'login-password'].forEach(id => {
-    document.getElementById(id).addEventListener('keydown', e => {
-      if (e.key === 'Enter') doLogin();
-    });
-  });
-
   ['co-serial', 'co-student', 'ci-student'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => {
       if (e.key === 'Enter') submitAction();
@@ -81,55 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('storage', syncStateFromStorage);
 });
-
-// ── AUTH ──
-function doLogin() {
-  const user = document.getElementById('login-username').value.trim();
-  const pass = document.getElementById('login-password').value;
-  const err  = document.getElementById('login-error');
-
-  if (user === CREDS.username && pass === CREDS.password) {
-    saveLogin();
-    showApp(user);
-    err.classList.add('hidden');
-  } else {
-    err.classList.remove('hidden');
-    document.getElementById('login-password').value = '';
-  }
-}
-
-function doLogout() {
-  clearLogin();
-  isLoggedIn = false;
-  closeScanner();
-  document.getElementById('app').classList.add('hidden');
-  document.getElementById('login-overlay').classList.remove('hidden');
-  document.getElementById('login-username').value = '';
-  document.getElementById('login-password').value = '';
-  document.getElementById('login-error').classList.add('hidden');
-  closeModal('action-modal');
-  closeModal('device-modal');
-  closeModal('add-device-modal');
-}
-
-function showApp(user) {
-  isLoggedIn = true;
-  document.getElementById('login-overlay').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-  document.getElementById('logged-in-user').textContent = user;
-}
-
-function loadLogin() {
-  return localStorage.getItem(LOGIN_KEY) === CREDS.username;
-}
-
-function saveLogin() {
-  localStorage.setItem(LOGIN_KEY, CREDS.username);
-}
-
-function clearLogin() {
-  localStorage.removeItem(LOGIN_KEY);
-}
 
 // ── THEME ──
 function toggleTheme() {
@@ -247,7 +185,6 @@ function hideGlobalLoading() {
 
 // ── ACTION MODAL ──
 function openModal(type) {
-  if (!isLoggedIn) return;
   currentAction = type;
 
   const errEl     = document.getElementById('modal-error');
@@ -307,8 +244,6 @@ function hideAnimatedElement(el, exitClass, delay = UI_EXIT_MS) {
 
 // ── ADD CHROMEBOOK ──
 function openAddDeviceModal() {
-  if (!isLoggedIn) return;
-
   document.getElementById('add-barcode').value = '';
   document.getElementById('add-serial').value = '';
   document.getElementById('add-device-error').classList.add('hidden');
@@ -319,7 +254,6 @@ function openAddDeviceModal() {
 }
 
 async function submitAddDevice() {
-  if (!isLoggedIn) return;
 
   const errorEl = document.getElementById('add-device-error');
   const submitBtn = document.getElementById('add-device-submit');
@@ -442,7 +376,6 @@ function parseChromebookNumber(value) {
 
 // ── BARCODE SCANNER ──
 async function openScanner(targetInputId, label) {
-  if (!isLoggedIn) return;
   if (scannerActive || scannerStream) closeScanner();
 
   scannerTargetInputId = targetInputId;
@@ -806,7 +739,7 @@ function openDeviceModal(id) {
   }
 
   ['dm-barcode-edit-btn', 'dm-serial-edit-btn'].forEach(btnId => {
-    document.getElementById(btnId).style.display = isLoggedIn ? '' : 'none';
+    document.getElementById(btnId).style.display = '';
   });
 
   cancelEdit('barcode');
@@ -818,7 +751,6 @@ function openDeviceModal(id) {
 }
 
 async function saveNotes() {
-  if (!isLoggedIn) return;
   const cb = chromebooks.find(c => c.id === openDeviceIndex);
   if (!cb) return;
 
@@ -854,7 +786,6 @@ async function saveNotes() {
 }
 
 function requestRemoveOpenDevice() {
-  if (!isLoggedIn) return;
   const cb = chromebooks.find(c => c.id === openDeviceIndex);
   if (!cb) return;
 
@@ -870,7 +801,6 @@ function cancelRemoveOpenDevice() {
 }
 
 async function removeOpenDevice() {
-  if (!isLoggedIn) return;
   const cb = chromebooks.find(c => c.id === openDeviceIndex);
   if (!cb) return;
 
@@ -895,7 +825,6 @@ async function removeOpenDevice() {
 
 // ── INLINE EDIT ──
 function editField(field) {
-  if (!isLoggedIn) return;
   const cb = chromebooks.find(c => c.id === openDeviceIndex);
   if (!cb) return;
 
@@ -918,7 +847,6 @@ function editField(field) {
 }
 
 async function saveField(field) {
-  if (!isLoggedIn) return;
   const cb  = chromebooks.find(c => c.id === openDeviceIndex);
   if (!cb) return;
   const input = document.getElementById(`dm-${field}-input`);
@@ -953,7 +881,7 @@ function cancelEdit(field) {
   const editDiv = document.getElementById(`dm-${field}-edit`);
   const editBtn = document.getElementById(`dm-${field}-edit-btn`);
   if (valueEl) valueEl.style.display = '';
-  if (editBtn) editBtn.style.display = isLoggedIn ? '' : 'none';
+  if (editBtn) editBtn.style.display = '';
   if (editDiv) editDiv.classList.add('hidden');
 }
 
@@ -1025,7 +953,6 @@ function renderLog() {
 }
 
 async function clearLog() {
-  if (!isLoggedIn) return;
   
   showGlobalLoading();
   
