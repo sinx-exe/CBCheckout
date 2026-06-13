@@ -22,10 +22,6 @@ let scannerDetector = null;
 let scannerTargetInputId = null;
 let scannerAnimationId = null;
 let scannerActive = false;
-let scannerCountdownTimers = [];
-let scannerPendingValue = null;
-const SCANNER_COUNTDOWN_MS = 750;
-const SCANNER_COUNTDOWN_RING_CIRCUMFERENCE = 339.292;
 let sheetConnected = false;
 let syncTimer = null;
 
@@ -444,227 +440,20 @@ async function scanVideoFrame() {
 
   try {
     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      const match = await detectBarcodeInScannerRegion(video);
-      if (match.value) {
-        status.textContent = `Barcode in highlighted region - starting countdown.`;
-        runScannerCountdown();
+      const barcodes = await scannerDetector.detect(video);
+      const value = (barcodes[0] && barcodes[0].rawValue || '').trim();
+      if (value) {
+        fillScannedValue(value);
+        status.textContent = `Scanned ${value}`;
+        closeScanner();
         return;
       }
     }
   } catch (err) {
-    status.textContent = 'Scanner paused. Move the barcode into the highlighted region.';
+    status.textContent = 'Scanner paused. Move the barcode into the camera frame.';
   }
 
   scannerAnimationId = requestAnimationFrame(scanVideoFrame);
-}
-
-async function detectBarcodeInScannerRegion(video) {
-  if (!video || !scannerDetector || !video.videoWidth || !video.videoHeight) {
-    return { value: null };
-  }
-
-  const crop = getScannerRegionCrop(video);
-  if (!crop) return { value: null };
-
-  const barcodes = await scannerDetector.detect(video);
-  const match = findBarcodeInsideScannerCrop(barcodes, crop);
-  return { value: match ? (match.rawValue || '').trim() || null : null };
-}
-
-function findBarcodeInsideScannerCrop(barcodes, crop) {
-  if (!Array.isArray(barcodes) || !crop) return null;
-
-  return barcodes.find(barcode => isBarcodeInsideScannerCrop(barcode, crop)) || null;
-}
-
-function isBarcodeInsideScannerCrop(barcode, crop) {
-  const bounds = getBarcodeBounds(barcode);
-  if (!bounds) return false;
-
-  const centerX = bounds.x + bounds.width / 2;
-  const centerY = bounds.y + bounds.height / 2;
-  return (
-    centerX >= crop.x &&
-    centerX <= crop.x + crop.width &&
-    centerY >= crop.y &&
-    centerY <= crop.y + crop.height
-  );
-}
-
-function getBarcodeBounds(barcode) {
-  if (barcode && barcode.boundingBox) {
-    const { x, y, width, height } = barcode.boundingBox;
-    if ([x, y, width, height].every(Number.isFinite) && width > 0 && height > 0) {
-      return { x, y, width, height };
-    }
-  }
-
-  if (barcode && Array.isArray(barcode.cornerPoints) && barcode.cornerPoints.length) {
-    const xs = barcode.cornerPoints.map(point => point.x).filter(Number.isFinite);
-    const ys = barcode.cornerPoints.map(point => point.y).filter(Number.isFinite);
-    if (xs.length && ys.length) {
-      const left = Math.min(...xs);
-      const top = Math.min(...ys);
-      const right = Math.max(...xs);
-      const bottom = Math.max(...ys);
-      return { x: left, y: top, width: right - left, height: bottom - top };
-    }
-  }
-
-  return null;
-}
-
-function getScannerRegionCrop(video) {
-  const frame = video.closest('.scanner-frame');
-  const reticle = frame ? frame.querySelector('.scanner-reticle') : null;
-  if (!reticle) {
-    return {
-      x: 0,
-      y: 0,
-      width: video.videoWidth,
-      height: video.videoHeight,
-    };
-  }
-
-  const videoRect = video.getBoundingClientRect();
-  const reticleRect = reticle.getBoundingClientRect();
-  if (!videoRect.width || !videoRect.height || !reticleRect.width || !reticleRect.height) return null;
-
-  const scale = Math.max(
-    videoRect.width / video.videoWidth,
-    videoRect.height / video.videoHeight
-  );
-  const renderedWidth = video.videoWidth * scale;
-  const renderedHeight = video.videoHeight * scale;
-  const offsetX = (videoRect.width - renderedWidth) / 2;
-  const offsetY = (videoRect.height - renderedHeight) / 2;
-
-  const rawX = (reticleRect.left - videoRect.left - offsetX) / scale;
-  const rawY = (reticleRect.top - videoRect.top - offsetY) / scale;
-  const rawWidth = reticleRect.width / scale;
-  const rawHeight = reticleRect.height / scale;
-
-  const x = Math.max(0, Math.floor(rawX));
-  const y = Math.max(0, Math.floor(rawY));
-  const right = Math.min(video.videoWidth, Math.ceil(rawX + rawWidth));
-  const bottom = Math.min(video.videoHeight, Math.ceil(rawY + rawHeight));
-  const width = right - x;
-  const height = bottom - y;
-
-  if (width < 1 || height < 1) return null;
-  return { x, y, width, height };
-}
-
-function runScannerCountdown() {
-  // Pause live detection while the countdown plays.
-  if (scannerAnimationId) {
-    cancelAnimationFrame(scannerAnimationId);
-    scannerAnimationId = null;
-  }
-  scannerPendingValue = null;
-
-  const overlay  = document.getElementById('scanner-countdown');
-  const numberEl = document.getElementById('scanner-countdown-number');
-  const ringEl   = document.getElementById('scanner-countdown-progress');
-  const status   = document.getElementById('scanner-status');
-  if (!overlay || !numberEl || !ringEl) {
-    // Fallback: just snapshot now and try to detect.
-    captureAndDetectSnapshot().then(({ value }) => {
-      if (value) {
-        fillScannedValue(value);
-        if (status) status.textContent = `Scanned ${value}`;
-      }
-      closeScanner();
-    });
-    return;
-  }
-
-  if (status) status.textContent = 'Hold steady...';
-
-  clearScannerCountdownTimers();
-  overlay.classList.remove('hidden');
-  overlay.setAttribute('aria-hidden', 'false');
-
-  const sequence = [3, 2, 1];
-  sequence.forEach((count, index) => {
-    const stepTimer = window.setTimeout(() => {
-      if (!scannerActive) return;
-      numberEl.textContent = String(count);
-      // Force restart of the ring animation by toggling the class.
-      ringEl.classList.remove('is-running');
-      // Reflow to restart the CSS animation cleanly.
-      void ringEl.getBoundingClientRect();
-      ringEl.classList.add('is-running');
-
-      if (index === sequence.length - 1) {
-        const finishTimer = window.setTimeout(() => {
-          captureAndDetectSnapshot().then(({ value }) => {
-            const statusEl = document.getElementById('scanner-status');
-            if (value) {
-              scannerPendingValue = value;
-              finalizeScannerCountdown();
-            } else {
-              // Nothing found in the snapshot — let the user try again.
-              if (statusEl) statusEl.textContent = 'No barcode found in the photo. Try again.';
-              hideScannerCountdown();
-              if (scannerActive) scanVideoFrame();
-            }
-          });
-        }, SCANNER_COUNTDOWN_MS);
-        scannerCountdownTimers.push(finishTimer);
-      }
-    }, index * SCANNER_COUNTDOWN_MS);
-    scannerCountdownTimers.push(stepTimer);
-  });
-}
-
-async function captureAndDetectSnapshot() {
-  const video = document.getElementById('scanner-video');
-  const status = document.getElementById('scanner-status');
-  if (!video || !scannerDetector) return { value: null };
-
-  if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
-    return { value: null };
-  }
-
-  try {
-    const { value } = await detectBarcodeInScannerRegion(video);
-    if (value && status) status.textContent = `Detected ${value}`;
-    return { value };
-  } catch (err) {
-    if (status) status.textContent = 'Detection failed. Try again.';
-    return { value: null };
-  }
-}
-
-function finalizeScannerCountdown() {
-  const value = scannerPendingValue;
-  clearScannerCountdownTimers();
-  hideScannerCountdown();
-  scannerPendingValue = null;
-  if (value) {
-    fillScannedValue(value);
-    const status = document.getElementById('scanner-status');
-    if (status) status.textContent = `Scanned ${value}`;
-  }
-  closeScanner();
-}
-
-function hideScannerCountdown() {
-  const overlay = document.getElementById('scanner-countdown');
-  const numberEl = document.getElementById('scanner-countdown-number');
-  const ringEl = document.getElementById('scanner-countdown-progress');
-  if (overlay) {
-    overlay.classList.add('hidden');
-    overlay.setAttribute('aria-hidden', 'true');
-  }
-  if (ringEl) ringEl.classList.remove('is-running');
-  if (numberEl) numberEl.textContent = '3';
-}
-
-function clearScannerCountdownTimers() {
-  scannerCountdownTimers.forEach(id => window.clearTimeout(id));
-  scannerCountdownTimers = [];
 }
 
 function fillScannedValue(value) {
@@ -682,9 +471,6 @@ function closeScanner() {
     cancelAnimationFrame(scannerAnimationId);
     scannerAnimationId = null;
   }
-  clearScannerCountdownTimers();
-  scannerPendingValue = null;
-  hideScannerCountdown();
   stopScannerStream();
 
   const modal = document.getElementById('scanner-modal');

@@ -305,16 +305,6 @@
       <div class="scanner-frame">
         <video id="scanner-video" playsinline muted></video>
         <div class="scanner-reticle" aria-hidden="true"></div>
-        <div class="scanner-countdown hidden" id="scanner-countdown" aria-hidden="true">
-          <p class="scanner-countdown-hint">ENSURE FULL BARCODE IS VISIBLE IN FRAME</p>
-          <div class="scanner-countdown-ring">
-            <svg class="scanner-countdown-svg" viewBox="0 0 120 120" aria-hidden="true">
-              <circle class="scanner-countdown-track" cx="60" cy="60" r="54"></circle>
-              <circle class="scanner-countdown-progress" id="scanner-countdown-progress" cx="60" cy="60" r="54"></circle>
-            </svg>
-            <span class="scanner-countdown-number" id="scanner-countdown-number">3</span>
-          </div>
-        </div>
       </div>
       <div class="scanner-status" id="scanner-status">Starting camera...</div>
       <button class="btn-submit scanner-cancel" type="button" onclick="closeScanner()">CANCEL SCAN</button>
