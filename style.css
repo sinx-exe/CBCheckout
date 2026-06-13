@@ -256,6 +256,7 @@ button:disabled {
   font-weight: 700;
   letter-spacing: 0.08em;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .sync-badge.online {
