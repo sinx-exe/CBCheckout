@@ -788,6 +788,11 @@ function ensureScriptConfigured() {
   }
 }
 
+function openSheetLink(event) {
+  if (event) event.preventDefault();
+  window.location.assign(SHEET_URL);
+}
+
 async function getStateFromSheet() {
   ensureScriptConfigured();
 
@@ -825,12 +830,8 @@ function setSyncStatus(isConnected) {
   status.textContent = isConnected ? 'SHEET SYNC' : 'SYNC OFFLINE';
   status.className = `sync-badge ${isConnected ? 'online' : 'offline'}`;
   status.setAttribute('href', SHEET_URL);
-  status.setAttribute('target', '_blank');
-  status.setAttribute('rel', 'noopener noreferrer');
   status.setAttribute('aria-label', 'Open synced Google Sheet');
-  status.onclick = () => {
-    window.open(SHEET_URL, '_blank', 'noopener,noreferrer');
-  };
+  status.onclick = openSheetLink;
   status.title = isConnected
     ? 'Connected to the shared Google Sheet.'
     : 'Not connected to Google Sheets. Checkout changes are disabled until this reconnects.';
