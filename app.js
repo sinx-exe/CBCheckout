@@ -1,13 +1,13 @@
-// =============================================
-//  CHROMEBOOK CHECKOUT — app.js
-// =============================================
+// app.js — The main application logic for the Chromebook Checkout system, handling state management, Google Sheets sync, barcode scanning, checkout/check-in workflows, and UI rendering.
+
+// Author: Matthew Wong & Amaan Patnaik
+// Date: 5/21/2026
 
 const TOTAL = 32;
 const STORAGE_KEY = 'cbcheckout-state-v1';
 
 // Paste your deployed Google Apps Script Web App URL here.
-// It should look like:
-// https://script.google.com/macros/s/AKfycb.../exec
+
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbytbjPnNzdbz-YSr9lehvFoTQe0dzMZ_rfSTVJwa3aAo1Ikz78tBi08WXQthXnZ-rH8/exec';
 
 const SYNC_INTERVAL_MS = 10000;

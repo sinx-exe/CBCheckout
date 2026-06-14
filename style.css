@@ -1,8 +1,9 @@
-/* =============================================
-   CHROMEBOOK CHECKOUT — style.css
-   Aesthetic: Industrial utility / dark terminal
-   Fonts: Inter + Roboto Mono
-============================================= */
+/* style.css — Stylesheet for the Chromebook Checkout application, providing a dark industrial terminal aesthetic with light theme support and responsive layouts. 
+
+Author: Matthew Wong 
+ Date: 5/21/2026
+*/
+
 
 :root {
   --bg:          #0d0f13;
