@@ -9,6 +9,7 @@ const STORAGE_KEY = 'cbcheckout-state-v1';
 // Paste your deployed Google Apps Script Web App URL here.
 
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbytbjPnNzdbz-YSr9lehvFoTQe0dzMZ_rfSTVJwa3aAo1Ikz78tBi08WXQthXnZ-rH8/exec';
+const SHEET_URL = 'https://docs.google.com/spreadsheets/d/19mq5Y_fighXt1KX3oO7LhST142hJdfh0yDIXAcN7waY/edit?gid=1814390875#gid=1814390875';
 
 const SYNC_INTERVAL_MS = 10000;
 const UI_EXIT_MS = 220;
@@ -823,6 +824,13 @@ function setSyncStatus(isConnected) {
 
   status.textContent = isConnected ? 'SHEET SYNC' : 'SYNC OFFLINE';
   status.className = `sync-badge ${isConnected ? 'online' : 'offline'}`;
+  status.setAttribute('href', SHEET_URL);
+  status.setAttribute('target', '_blank');
+  status.setAttribute('rel', 'noopener noreferrer');
+  status.setAttribute('aria-label', 'Open synced Google Sheet');
+  status.onclick = () => {
+    window.open(SHEET_URL, '_blank', 'noopener,noreferrer');
+  };
   status.title = isConnected
     ? 'Connected to the shared Google Sheet.'
     : 'Not connected to Google Sheets. Checkout changes are disabled until this reconnects.';
