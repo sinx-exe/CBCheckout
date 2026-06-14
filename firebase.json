@@ -3,6 +3,14 @@
     "public": ".",
     "ignore": [
       "firebase.json",
+      ".firebase/**",
+      ".git/**",
+      ".github/**",
+      ".vscode/**",
+      "CBCheckout/**",
+      "README.md",
+      "google-apps-script.gs",
+      "firebase-debug.log",
       "**/.*",
       "**/node_modules/**"
     ],

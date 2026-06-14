@@ -1,2 +1,4 @@
 .DS_Store
 CBCheckout/
+.firebase/
+firebase-debug.log
